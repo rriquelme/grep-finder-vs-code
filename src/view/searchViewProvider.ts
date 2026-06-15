@@ -67,13 +67,13 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: 'results', model: emptyModel(), done: true });
       return;
     }
-    const folder = vscode.workspace.workspaceFolders?.[0];
-    if (!folder) {
+    const folders = vscode.workspace.workspaceFolders;
+    if (!folders || folders.length === 0) {
       this.post({ type: 'error', message: 'Open a folder to search.' });
       return;
     }
     try {
-      const model = await this.search.search(options, folder, (partial) =>
+      const model = await this.search.search(options, folders, (partial) =>
         this.post({ type: 'results', model: partial, done: false }),
       );
       this.post({ type: 'results', model, done: true });

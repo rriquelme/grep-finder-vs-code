@@ -1,11 +1,18 @@
+# Source and tooling — not needed in the packaged extension.
 .vscode/**
-node_modules/**
+.github/**
 src/**
 test/**
-media/main.ts
+out/**
 docs/**
+examples/**
+media/main.ts
+node_modules/.bin/**
 esbuild.js
 tsconfig.json
+tsconfig.integration.json
 .gitignore
-**/*.map
 .eslintrc.json
+**/*.map
+**/*.ts
+!dist/**

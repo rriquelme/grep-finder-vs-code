@@ -5,6 +5,10 @@
   "version": "0.0.1",
   "publisher": "enhanced-finder",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rriquelme/enhanced-finder-vs-code.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -89,15 +93,22 @@
     "watch": "node esbuild.js --watch",
     "lint": "eslint src --ext ts",
     "test": "node --test --import tsx test/*.test.ts",
-    "package": "vsce package"
+    "compile:integration": "tsc -p tsconfig.integration.json",
+    "test:integration": "npm run build && npm run compile:integration && node out/test/integration/runTest.js",
+    "package": "npm run build && vsce package --no-update-package-json"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^2.32.0",
     "esbuild": "^0.20.0",
     "eslint": "^8.56.0",
+    "glob": "^10.5.0",
+    "mocha": "^10.8.2",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   },

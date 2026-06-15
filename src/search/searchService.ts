@@ -1,7 +1,7 @@
 // Spawns ripgrep and streams parsed results. Handles cancellation of stale
-// searches and resolves the ripgrep binary path.
+// searches and resolves the ripgrep binary path. Supports multi-root workspaces
+// by passing every folder path to a single ripgrep invocation.
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { buildRgArgs } from './args';
 import { RgJsonParser } from './rgJsonParser';
@@ -19,32 +19,39 @@ export class SearchService {
   }
 
   /**
-   * Run a search in the given workspace folder. Calls `onUpdate` periodically
-   * with the model built so far, and resolves with the final model.
+   * Run a search across the given workspace folders. Calls `onUpdate`
+   * periodically with the model built so far, and resolves with the final
+   * model. Relative paths are folder-prefixed when more than one folder is
+   * searched, so results from different roots stay distinguishable.
    */
   async search(
     opts: SearchOptions,
-    folder: vscode.WorkspaceFolder,
+    folders: readonly vscode.WorkspaceFolder[],
     onUpdate?: (model: SearchModel) => void,
   ): Promise<SearchModel> {
     this.cancel();
+
+    if (folders.length === 0) {
+      return { files: [], truncated: false, totalMatches: 0 };
+    }
 
     const config = vscode.workspace.getConfiguration('enhancedFinder');
     const useSmartCase = config.get<boolean>('useSmartCase', true);
     const maxResults = config.get<number>('maxResults', 2000);
     const rgPath = resolveRgPath(config.get<string>('ripgrepPath', ''));
 
-    const root = folder.uri.fsPath;
-    const args = buildRgArgs(opts, { useSmartCase });
+    const multiRoot = folders.length > 1;
+    const searchPaths = folders.map((f) => f.uri.fsPath);
+    const args = [...buildRgArgs(opts, { useSmartCase }), ...searchPaths];
 
     const parser = new RgJsonParser(
-      (abs) => path.relative(root, abs) || abs,
+      (abs) => vscode.workspace.asRelativePath(vscode.Uri.file(abs), multiRoot),
       (abs) => vscode.Uri.file(abs).toString(),
       maxResults,
     );
 
     return new Promise<SearchModel>((resolve) => {
-      const child = spawn(rgPath, args, { cwd: root });
+      const child = spawn(rgPath, args, { cwd: folders[0].uri.fsPath });
       this.active = child;
 
       let updateTimer: NodeJS.Timeout | null = null;

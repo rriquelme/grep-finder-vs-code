@@ -25,7 +25,10 @@ const extensionConfig = {
   platform: 'node',
   format: 'cjs',
   target: 'node18',
-  external: ['vscode'],
+  // 'vscode' is provided by the host. '@vscode/ripgrep' must stay external so
+  // its rgPath resolves against the real node_modules location (the bundled
+  // ripgrep binary lives there), not against dist/.
+  external: ['vscode', '@vscode/ripgrep'],
   sourcemap: true,
   logLevel: 'info',
 };

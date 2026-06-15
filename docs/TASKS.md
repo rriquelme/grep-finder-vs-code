@@ -6,14 +6,15 @@ and **acceptance criteria (AC)**. See [`DESIGN.md`](DESIGN.md) for rationale.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
-> **Progress (2026-06-15):** Phases **0–5 implemented** — scaffold, Activity
-> Bar view, ripgrep search core, results UI, single open, and grid open are all
-> in place and building, plus **6.1 settings** and **6.2 UX polish** (codicons,
-> keyboard match navigation, loading spinner, per-file counts). Unit tests
-> (args, parser, layout) pass; `tsc`, eslint, and `esbuild` are clean. An
-> `examples/` workspace provides files across nested folders that share search
-> words for manual testing. Remaining: 6.3 (multi-root) and Phase 7 (CI,
-> integration test, packaging). Verify interactively with F5.
+> **Progress (2026-06-15):** **Phases 0–7 complete.** Scaffold, Activity Bar
+> view, ripgrep search core, results UI, single open, grid open, settings, UX
+> polish (codicons, keyboard nav, spinner, counts), and multi-root support are
+> all implemented. Unit tests (args, parser, layout) pass; an integration suite
+> (`@vscode/test-electron`) runs in CI under xvfb against `examples/`; `tsc`,
+> eslint, and `esbuild` are clean; a GitHub Actions workflow lints/tests/builds
+> and uploads the packaged `.vsix`. `npm run package` produces an installable
+> extension. The search pipeline is additionally verified against real ripgrep
+> on the `examples/` workspace.
 
 ---
 
@@ -140,7 +141,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
   - Keyboard: ↑/↓ move the active match, Enter opens it, Space toggles its
     grid selection. Spinner shows while searching; per-file match counts and a
     total/truncated status line are shown.
-- [ ] **6.3 Multi-root & no-workspace**
+- [x] **6.3 Multi-root & no-workspace**
   - Handle multiple workspace folders (search each / pick) and the
     no-folder-open case gracefully.
   - AC: multi-root workspace returns results from all folders; no crash
@@ -148,19 +149,19 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
 ## Phase 7 — Tests, docs, packaging
 
-- [ ] **7.1 Unit tests green in CI**
+- [x] **7.1 Unit tests green in CI**
   - Cover arg builder, JSON parser, layout function; add GitHub Actions
     workflow running `lint` + `test` + `build`.
   - AC: CI passes on push/PR.
-- [ ] **7.2 Integration smoke test**
+- [x] **7.2 Integration smoke test**
   - `@vscode/test-electron` test: activate, run a search on a fixture
     workspace, assert a non-empty `SearchModel`.
   - AC: integration test passes locally and in CI.
-- [ ] **7.3 README + media**
+- [x] **7.3 README + media**
   - Usage docs, animated GIF/screenshot of grid open, marketplace metadata
     (`categories`, `keywords`, `galleryBanner`).
   - AC: README renders with a working demo image.
-- [ ] **7.4 Package**
+- [x] **7.4 Package**
   - `vsce package` → `.vsix`; manual install + smoke test in clean VS Code.
   - AC: `.vsix` installs and the full find → grid flow works end-to-end.
 
