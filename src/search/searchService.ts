@@ -2,12 +2,17 @@
 // searches and resolves the ripgrep binary path. Supports multi-root workspaces
 // by passing every folder path to a single ripgrep invocation.
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { buildRgArgs } from './args';
+import { locateRgBinary } from './rgLocate';
 import { RgJsonParser } from './rgJsonParser';
 import type { SearchModel, SearchOptions } from '../models';
+
+let channel: vscode.OutputChannel | undefined;
+function log(message: string): void {
+  channel ??= vscode.window.createOutputChannel('Enhanced Finder');
+  channel.appendLine(message);
+}
 
 export class SearchService {
   private active: ChildProcessWithoutNullStreams | null = null;
@@ -40,11 +45,26 @@ export class SearchService {
     const config = vscode.workspace.getConfiguration('enhancedFinder');
     const useSmartCase = config.get<boolean>('useSmartCase', true);
     const maxResults = config.get<number>('maxResults', 2000);
-    const rgPath = resolveRgPath(config.get<string>('ripgrepPath', ''));
+
+    const override = (config.get<string>('ripgrepPath', '') || '').trim();
+    let rgPath = override;
+    let triedLocations: string[] = [];
+    if (!rgPath) {
+      const found = findRgBinary();
+      triedLocations = found.tried;
+      // Fall back to `rg` on the PATH if VS Code's copy isn't where we expect.
+      rgPath = found.path ?? (process.platform === 'win32' ? 'rg.exe' : 'rg');
+      if (!found.path) {
+        log(`ripgrep not found in the VS Code install; trying PATH. Checked:\n  ${found.tried.join('\n  ')}`);
+      }
+    }
 
     const multiRoot = folders.length > 1;
     const searchPaths = folders.map((f) => f.uri.fsPath);
     const args = [...buildRgArgs(opts, { useSmartCase }), ...searchPaths];
+
+    log(`rg: ${rgPath}`);
+    log(`args: ${args.join(' ')}`);
 
     const parser = new RgJsonParser(
       (abs) => vscode.workspace.asRelativePath(vscode.Uri.file(abs), multiRoot),
@@ -52,9 +72,18 @@ export class SearchService {
       maxResults,
     );
 
-    return new Promise<SearchModel>((resolve) => {
-      const child = spawn(rgPath, args, { cwd: folders[0].uri.fsPath });
+    return new Promise<SearchModel>((resolve, reject) => {
+      let child: ChildProcessWithoutNullStreams;
+      try {
+        child = spawn(rgPath, args, { cwd: folders[0].uri.fsPath });
+      } catch (err) {
+        reject(new Error(`Could not launch ripgrep at "${rgPath}": ${String(err)}`));
+        return;
+      }
       this.active = child;
+
+      let stderr = '';
+      let settled = false;
 
       let updateTimer: NodeJS.Timeout | null = null;
       const scheduleUpdate = () => {
@@ -76,53 +105,66 @@ export class SearchService {
       });
 
       child.stderr.setEncoding('utf8');
-      child.stderr.on('data', () => {
-        /* ripgrep writes benign warnings here; ignore for now. */
+      child.stderr.on('data', (chunk: string) => {
+        stderr += chunk;
       });
 
-      const done = () => {
+      const cleanup = () => {
         if (this.active === child) {
           this.active = null;
         }
         if (updateTimer) {
           clearTimeout(updateTimer);
         }
-        resolve(parser.finish());
       };
 
-      child.on('error', done);
-      child.on('close', done);
+      // Spawn-level failure (e.g. ENOENT when the binary path is wrong).
+      child.on('error', (err) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        cleanup();
+        log(`spawn error: ${String(err)}`);
+        const hint =
+          ' Set "enhancedFinder.ripgrepPath" to a ripgrep binary.' +
+          (triedLocations.length ? `\nChecked:\n  ${triedLocations.join('\n  ')}` : '');
+        reject(new Error(`Could not run ripgrep at "${rgPath}": ${err.message}.${hint}`));
+      });
+
+      // ripgrep exit codes: 0 = matches, 1 = no matches, 2 = error.
+      child.on('close', (code) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        cleanup();
+        if (code === 2 && parser.build().totalMatches === 0) {
+          log(`ripgrep error (exit 2): ${stderr.trim()}`);
+          reject(new Error(stderr.trim() || 'ripgrep exited with an error.'));
+          return;
+        }
+        if (stderr.trim()) {
+          log(`ripgrep stderr: ${stderr.trim()}`);
+        }
+        resolve(parser.finish());
+      });
     });
   }
 }
 
 /**
- * Resolve a ripgrep binary without bundling one. Order of preference:
- *   1. The `enhancedFinder.ripgrepPath` setting, if set.
- *   2. The ripgrep that VS Code ships (under `vscode.env.appRoot`) — every
- *      install has it because the built-in Search uses it.
- *   3. `rg` on the PATH.
+ * Locate a ripgrep binary that ships with VS Code, without bundling one.
+ *
+ * VS Code 1.122+ ships ripgrep as `@vscode/ripgrep-universal` with a
+ * `bin/<platform>-<arch>/rg` layout; older builds used `@vscode/ripgrep`
+ * with `bin/rg`. We check the known layouts under both `node_modules` and
+ * `node_modules.asar.unpacked`, then fall back to scanning any
+ * `@vscode/ripgrep*` package's `bin` directory so future renames keep working.
+ *
+ * Returns the resolved path (if any) plus every location we tried, for error
+ * reporting.
  */
-function resolveRgPath(override: string): string {
-  if (override && override.trim()) {
-    return override.trim();
-  }
-
-  const exe = process.platform === 'win32' ? 'rg.exe' : 'rg';
-  const root = vscode.env.appRoot;
-  if (root) {
-    const candidates = [
-      path.join(root, 'node_modules', '@vscode', 'ripgrep', 'bin', exe),
-      path.join(root, 'node_modules.asar.unpacked', '@vscode', 'ripgrep', 'bin', exe),
-      path.join(root, 'node_modules', 'vscode-ripgrep', 'bin', exe),
-    ];
-    for (const candidate of candidates) {
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    }
-  }
-
-  // Last resort: assume ripgrep is on the PATH.
-  return exe;
+function findRgBinary(): { path?: string; tried: string[] } {
+  return locateRgBinary(vscode.env.appRoot, process.platform, process.arch);
 }
