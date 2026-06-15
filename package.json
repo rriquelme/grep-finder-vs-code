@@ -1,0 +1,107 @@
+{
+  "name": "enhanced-finder",
+  "displayName": "Enhanced Finder",
+  "description": "Grep-style multi-file finder with context lines and grid open for VS Code.",
+  "version": "0.0.1",
+  "publisher": "enhanced-finder",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "search",
+    "find",
+    "grep",
+    "ripgrep",
+    "context"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "enhancedFinder",
+          "title": "Enhanced Finder",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "enhancedFinder": [
+        {
+          "id": "enhancedFinder.searchView",
+          "type": "webview",
+          "name": "Enhanced Finder"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "enhancedFinder.focus",
+        "title": "Enhanced Finder: Focus Search"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "enhancedFinder.focus",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f"
+      }
+    ],
+    "configuration": {
+      "title": "Enhanced Finder",
+      "properties": {
+        "enhancedFinder.defaultContextLines": {
+          "type": "number",
+          "default": 2,
+          "description": "Default number of context lines (both before and after) shown around each match."
+        },
+        "enhancedFinder.maxGridEditors": {
+          "type": "number",
+          "default": 9,
+          "description": "Maximum number of editors opened at once when using 'Open in grid'."
+        },
+        "enhancedFinder.maxResults": {
+          "type": "number",
+          "default": 2000,
+          "description": "Maximum number of matches to collect per search before truncating."
+        },
+        "enhancedFinder.useSmartCase": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use smart case (case-insensitive unless the query contains an uppercase letter)."
+        },
+        "enhancedFinder.ripgrepPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional absolute path to a ripgrep (rg) binary. Leave empty to use the bundled ripgrep."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "lint": "eslint src --ext ts",
+    "test": "node --test --import tsx test/*.test.ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.56.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@vscode/ripgrep": "^1.15.9"
+  }
+}

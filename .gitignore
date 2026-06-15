@@ -1,0 +1,7 @@
+node_modules/
+dist/
+out/
+*.vsix
+media/main.js
+media/main.js.map
+.DS_Store

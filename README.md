@@ -25,9 +25,23 @@ Enhanced Finder fixes both:
 
 ## Status
 
-📐 **Planning.** This repository currently contains the design and roadmap.
+🛠️ **Working core (phases 0–5).** The extension scaffolds, registers its
+Activity Bar view, searches via ripgrep with grep-style context, renders
+grouped results, opens a single match, and opens selected matches in a grid.
 See [`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and
-[`docs/TASKS.md`](docs/TASKS.md) for the actionable, phase-by-phase task list.
+[`docs/TASKS.md`](docs/TASKS.md) for the phase-by-phase task list / progress.
+
+### Develop
+
+```bash
+npm install
+npm run build      # bundle extension + webview
+npm test           # unit tests (args, ripgrep parser, grid layout)
+npm run lint
+```
+
+Then press **F5** in VS Code to launch an Extension Development Host, open the
+**Enhanced Finder** icon in the Activity Bar, and search.
 
 ## Core features (planned)
 

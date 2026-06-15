@@ -6,91 +6,97 @@ and **acceptance criteria (AC)**. See [`DESIGN.md`](DESIGN.md) for rationale.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
+> **Progress (2026-06-15):** Phases **0–5 implemented** — scaffold, Activity
+> Bar view, ripgrep search core, results UI, single open, and grid open are all
+> in place and building. Unit tests (args, parser, layout) pass; `tsc`, eslint,
+> and `esbuild` are clean. Remaining: Phase 6 (settings polish, multi-root) and
+> Phase 7 (CI, integration test, packaging). Verify interactively with F5.
+
 ---
 
 ## Phase 0 — Project scaffold
 
-- [ ] **0.1 Init Node/TS project**
+- [x] **0.1 Init Node/TS project**
   - Add `package.json` (name `enhanced-finder`, publisher placeholder,
     `engines.vscode`), `tsconfig.json`, `.gitignore`, `.vscodeignore`.
   - AC: `npm install` succeeds; `tsc --noEmit` runs clean on an empty `src/`.
-- [ ] **0.2 Dev dependencies**
+- [x] **0.2 Dev dependencies**
   - Add `@types/vscode`, `@types/node`, `typescript`, `esbuild`,
     `@vscode/ripgrep`, `eslint` + config, `@vscode/test-electron` + a test
     runner (e.g. `mocha`).
   - AC: `node_modules` resolves all; `package-lock.json` committed.
-- [ ] **0.3 Build pipeline**
+- [x] **0.3 Build pipeline**
   - `esbuild.js` bundling `src/extension.ts` → `dist/extension.js`
     (platform `node`, external `vscode`) and `media/main.ts` → `media/main.js`
     (platform `browser`). npm scripts: `build`, `watch`, `lint`, `test`.
   - AC: `npm run build` produces `dist/extension.js`.
-- [ ] **0.4 Launch config**
+- [x] **0.4 Launch config**
   - `.vscode/launch.json` (Extension Development Host) + `tasks.json`.
   - AC: F5 opens an Extension Dev Host with the extension activating.
 
 ## Phase 1 — Activity Bar presence (the "sidebar entry")
 
-- [ ] **1.1 Activity Bar container + view**
+- [x] **1.1 Activity Bar container + view**
   - In `package.json contributes`: `viewsContainers.activitybar` id
     `enhancedFinder` + `views` webview `enhancedFinder.searchView`.
   - AC: a new icon appears in the Activity Bar; clicking shows an empty view.
-- [ ] **1.2 Icon asset**
+- [x] **1.2 Icon asset**
   - Add `media/icon.svg` (monochrome, matches codicon style).
   - AC: icon renders crisply in the Activity Bar (light + dark themes).
-- [ ] **1.3 WebviewViewProvider skeleton**
+- [x] **1.3 WebviewViewProvider skeleton**
   - `src/view/searchViewProvider.ts` registered in `activate()`; loads
     `media/main.js` + `media/main.css` via CSP nonce; `retainContextWhenHidden`.
   - AC: webview renders a "Hello" UI and survives hide/show without reload.
-- [ ] **1.4 Focus command + keybinding**
+- [x] **1.4 Focus command + keybinding**
   - `enhancedFinder.focus` command + `ctrl+alt+f` / `cmd+alt+f`.
   - AC: keybinding reveals and focuses the search input.
 
 ## Phase 2 — Search core (ripgrep)
 
-- [ ] **2.1 Data model**
+- [x] **2.1 Data model**
   - `src/models.ts`: `MatchSubrange`, `ResultLine`, `MatchBlock`,
     `FileResult`, `SearchModel`, `SearchOptions` (see DESIGN §3).
   - AC: types compile; exported and documented.
-- [ ] **2.2 Argument builder**
+- [x] **2.2 Argument builder**
   - `src/search/searchService.ts`: pure function mapping `SearchOptions`
     → ripgrep argv (query, regex/fixed, case/smart-case, whole-word,
     `-A/-B/-C` with C overriding A/B, include/exclude `-g`, `--json`).
   - AC: unit tests assert exact argv for representative option sets.
-- [ ] **2.3 Spawn + cancel**
+- [x] **2.3 Spawn + cancel**
   - Resolve `rgPath` from `@vscode/ripgrep` (override via setting); spawn in
     workspace root; expose cancellation that kills the prior child.
   - AC: starting a new search terminates the previous `rg` process.
-- [ ] **2.4 JSON stream parser**
+- [x] **2.4 JSON stream parser**
   - `src/search/rgJsonParser.ts`: NDJSON line splitter → typed events →
     grouped `MatchBlock`s (context+match between `begin`/`end`, split blocks
     on ripgrep separators), with submatch highlight columns.
   - AC: unit test feeds captured `rg --json` fixtures → expected `SearchModel`.
-- [ ] **2.5 Limits & safety**
+- [x] **2.5 Limits & safety**
   - Enforce `maxResults` cap, mark `truncated`, debounce queries (~200ms).
   - AC: a query exceeding the cap stops early and sets `truncated=true`.
 
 ## Phase 3 — Results UI
 
-- [ ] **3.1 Query + option controls**
+- [x] **3.1 Query + option controls**
   - Webview: query input; toggles for case / whole-word / regex; numeric
     A/B/C inputs (C disables A/B with hint); include/exclude glob inputs.
   - AC: editing controls posts `search`/`updateOptions` to the host.
-- [ ] **3.2 Host ↔ webview messaging**
+- [x] **3.2 Host ↔ webview messaging**
   - Implement contract (DESIGN §4): host streams `results`/`done`/`error`;
     webview sends `search`/`cancel`/`openMatch`/`openGrid`/`toggleSelect`.
   - AC: typing a query renders results streamed from the host.
-- [ ] **3.3 Render grouped results**
+- [x] **3.3 Render grouped results**
   - Collapsible file headers; per block render context lines with line
     numbers, highlighted match ranges, `⋯` separators between blocks.
   - AC: results visually mirror `grep -A/-B/-C` for a sample query.
-- [ ] **3.4 State & empty/error states**
+- [x] **3.4 State & empty/error states**
   - Persist query/options/scroll via `getState`/`setState`; show
     empty / no-results / error / truncated banners.
   - AC: reopening the view restores the last query and results summary.
 
 ## Phase 4 — Open single match
 
-- [ ] **4.1 Reveal at match**
+- [x] **4.1 Reveal at match**
   - `openMatch(blockId)` → `showTextDocument` with `selection` +
     `revealRange(InCenter)`.
   - AC: clicking a match line opens the file scrolled/centered on that line
@@ -98,21 +104,21 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
 ## Phase 5 — Open N in a grid (headline feature)
 
-- [ ] **5.1 Selection model**
+- [x] **5.1 Selection model**
   - Checkboxes add/remove `MatchBlock` ids; action bar shows live count,
     "Open N in grid" (enabled ≥1), "Select all", "Clear".
   - AC: selecting/deselecting updates the count and button state.
-- [ ] **5.2 Layout function**
+- [x] **5.2 Layout function**
   - `src/grid/layout.ts`: `layout(n, max)` → `EditorGroupLayout` tree
     (1,2→1×2,3→1×3,4→2×2,5-6→2×3,7-9→3×3), cap at `maxGridEditors`.
   - AC: unit tests for n = 1..9 produce the expected group trees.
-- [ ] **5.3 Apply layout + reveal each**
+- [x] **5.3 Apply layout + reveal each**
   - `src/grid/gridService.ts`: `setEditorLayout`, then for each selected
     match open in its target `ViewColumn` with `preview:false`, select +
     `revealRange(InCenter)`.
   - AC: selecting 4 matches opens a 2×2 grid, each editor centered on its
     match; same file twice opens two independent editors.
-- [ ] **5.4 Independent navigation + over-cap handling**
+- [x] **5.4 Independent navigation + over-cap handling**
   - Confirm each editor scrolls independently (default; no sync). If
     selection > `maxGridEditors`, warn and open the first N.
   - AC: scrolling one grid editor leaves the others put; over-cap shows a
@@ -120,7 +126,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
 ## Phase 6 — Settings, polish, robustness
 
-- [ ] **6.1 Configuration**
+- [x] **6.1 Configuration**
   - Contribute `defaultContextLines`, `maxGridEditors`, `maxResults`,
     `useSmartCase`, `ripgrepPath`; read in services.
   - AC: changing a setting affects the next search/grid open.
