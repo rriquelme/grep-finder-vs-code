@@ -59,6 +59,26 @@ test('A and B used when contextBoth is 0', () => {
   assert.equal(args[args.indexOf('-A') + 1], '2');
 });
 
+test("contextMode 'split' ignores contextBoth even when set", () => {
+  const args = buildRgArgs(
+    opts({ contextBefore: 1, contextAfter: 2, contextBoth: 5, contextMode: 'split' }),
+    { useSmartCase: true },
+  );
+  assert.ok(!args.includes('-C'));
+  assert.equal(args[args.indexOf('-B') + 1], '1');
+  assert.equal(args[args.indexOf('-A') + 1], '2');
+});
+
+test("contextMode 'both' ignores A/B even when set", () => {
+  const args = buildRgArgs(
+    opts({ contextBefore: 1, contextAfter: 2, contextBoth: 5, contextMode: 'both' }),
+    { useSmartCase: true },
+  );
+  assert.ok(!args.includes('-A'));
+  assert.ok(!args.includes('-B'));
+  assert.equal(args[args.indexOf('-C') + 1], '5');
+});
+
 test('globs become include and negated exclude args', () => {
   const args = buildRgArgs(
     opts({ includeGlobs: ['src/**/*.ts'], excludeGlobs: ['**/node_modules/**'] }),

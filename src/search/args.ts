@@ -33,9 +33,13 @@ export function buildRgArgs(opts: SearchOptions, ctx: ArgBuildContext): string[]
     args.push('--ignore-case');
   }
 
-  // Context lines: -C overrides -A/-B.
-  if (opts.contextBoth > 0) {
-    args.push('-C', String(opts.contextBoth));
+  // Context lines: 'both' mode uses -C; 'split' mode uses -A/-B. The inactive
+  // group is ignored even if it still holds a value.
+  const mode = opts.contextMode ?? (opts.contextBoth > 0 ? 'both' : 'split');
+  if (mode === 'both') {
+    if (opts.contextBoth > 0) {
+      args.push('-C', String(opts.contextBoth));
+    }
   } else {
     if (opts.contextBefore > 0) {
       args.push('-B', String(opts.contextBefore));

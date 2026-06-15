@@ -52,12 +52,17 @@ export interface SearchOptions {
   isRegex: boolean;
   caseSensitive: boolean;
   wholeWord: boolean;
-  /** Context lines after a match (-A). Ignored when `contextBoth` is set. */
+  /** Context lines after a match (-A). Used when `contextMode` is 'split'. */
   contextAfter: number;
-  /** Context lines before a match (-B). Ignored when `contextBoth` is set. */
+  /** Context lines before a match (-B). Used when `contextMode` is 'split'. */
   contextBefore: number;
-  /** Context lines both before and after (-C). Overrides A/B when > 0. */
+  /** Context lines both before and after (-C). Used when `contextMode` is 'both'. */
   contextBoth: number;
+  /**
+   * Which context group is active: 'both' uses -C; 'split' uses -A/-B. The
+   * other group's values are kept but ignored. Defaults to 'both' when omitted.
+   */
+  contextMode?: 'both' | 'split';
   /** Comma/newline separated include globs. */
   includeGlobs: string[];
   /** Comma/newline separated exclude globs. */

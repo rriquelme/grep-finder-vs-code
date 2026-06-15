@@ -108,8 +108,8 @@ body {
   flex: 1;
 }
 
-.num-field.disabled {
-  opacity: 0.5;
+.num-field.ignored {
+  opacity: 0.4;
 }
 
 .num-label {
@@ -215,23 +215,27 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
+/* Each result block is a rounded box; clicking it toggles selection. */
 .block {
-  display: flex;
-  gap: 4px;
-  padding: 2px 0;
-  border-left: 2px solid transparent;
+  padding: 3px 6px;
+  margin: 1px 0;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
 }
 
 .block:hover {
-  border-left-color: var(--vscode-focusBorder);
+  border-color: var(--vscode-contrastBorder, var(--vscode-focusBorder));
+  background: var(--vscode-list-hoverBackground);
 }
 
-.block-check {
-  margin-top: 3px;
+.block.selected {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-inactiveSelectionBackground, var(--vscode-list-hoverBackground));
 }
 
 .code {
-  flex: 1;
   min-width: 0;
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: var(--vscode-editor-font-size, 12px);
@@ -244,12 +248,8 @@ body {
   gap: 8px;
 }
 
-.line.is-match {
-  cursor: pointer;
-}
-
-.line.is-match:hover {
-  background: var(--vscode-list-hoverBackground);
+.line.is-match .content {
+  font-weight: 600;
 }
 
 .line.active {

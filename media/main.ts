@@ -25,6 +25,7 @@ const DEFAULT_OPTIONS: SearchOptions = {
   contextAfter: 0,
   contextBefore: 0,
   contextBoth: 2,
+  contextMode: 'both',
   includeGlobs: [],
   excludeGlobs: [],
 };
@@ -141,21 +142,27 @@ function buildForm(): HTMLElement {
   query.row.appendChild(toggles);
   form.appendChild(query.row);
 
-  // Context controls (grep -A / -B / -C).
+  // Context controls (grep -A / -B / -C). Clicking into a group makes it the
+  // active one; the other group is grayed out and ignored (not reset).
   const ctx = el('div', 'context-row');
-  const before = numberField('Before (-B)', options.contextBefore, options.contextBoth > 0, (v) => {
+  const before = numberField('Before (-B)', options.contextBefore, (v) => {
     options.contextBefore = v;
+    setContextMode('split');
     runSearch();
   });
-  const after = numberField('After (-A)', options.contextAfter, options.contextBoth > 0, (v) => {
+  const after = numberField('After (-A)', options.contextAfter, (v) => {
     options.contextAfter = v;
+    setContextMode('split');
     runSearch();
   });
-  const both = numberField('Both (-C)', options.contextBoth, false, (v) => {
+  const both = numberField('Both (-C)', options.contextBoth, (v) => {
     options.contextBoth = v;
-    syncContextDisabled();
+    setContextMode('both');
     runSearch();
   });
+  before.input.onfocus = () => setContextMode('split');
+  after.input.onfocus = () => setContextMode('split');
+  both.input.onfocus = () => setContextMode('both');
   beforeInput = before.input;
   afterInput = after.input;
   bothInput = both.input;
@@ -165,7 +172,6 @@ function buildForm(): HTMLElement {
   form.appendChild(ctx);
 
   contextHint = el('div', 'hint');
-  contextHint.textContent = 'Both (-C) overrides Before/After. Set it to 0 to use them.';
   form.appendChild(contextHint);
 
   // Glob scope.
@@ -187,17 +193,25 @@ function buildForm(): HTMLElement {
   return form;
 }
 
-/** Enable/disable the A/B fields based on whether C is active. */
-function syncContextDisabled(): void {
-  const cActive = options.contextBoth > 0;
-  for (const [input, wrap] of [
-    [beforeInput, beforeInput.parentElement],
-    [afterInput, afterInput.parentElement],
-  ] as const) {
-    input.disabled = cActive;
-    wrap?.classList.toggle('disabled', cActive);
+/** Switch the active context group, if it actually changes, and re-search. */
+function setContextMode(mode: 'both' | 'split'): void {
+  if (options.contextMode === mode) {
+    return;
   }
-  contextHint.style.display = cActive ? '' : 'none';
+  options.contextMode = mode;
+  syncContextDisabled();
+  runSearch();
+}
+
+/** Gray out (but keep editable) whichever context group is inactive. */
+function syncContextDisabled(): void {
+  const splitActive = options.contextMode === 'split';
+  beforeInput.parentElement?.classList.toggle('ignored', !splitActive);
+  afterInput.parentElement?.classList.toggle('ignored', !splitActive);
+  bothInput.parentElement?.classList.toggle('ignored', splitActive);
+  contextHint.textContent = splitActive
+    ? 'Using Before/After. Click Both (-C) to switch.'
+    : 'Using Both (-C). Click Before or After to switch.';
 }
 
 // --- dynamic regions ---
@@ -294,16 +308,11 @@ function renderFile(file: FileResult): HTMLElement {
 }
 
 function renderBlock(block: MatchBlock): HTMLElement {
-  const wrap = el('div', 'block');
+  const wrap = el('div', `block${selected.has(block.id) ? ' selected' : ''}`);
   wrap.dataset.blockId = block.id;
+  wrap.title = 'Click to select · Double-click to open';
 
-  const check = document.createElement('input');
-  check.type = 'checkbox';
-  check.className = 'block-check';
-  check.checked = selected.has(block.id);
-  check.title = 'Select for grid open';
-  check.onchange = () => toggleSelection(block.id, check.checked);
-  wrap.appendChild(check);
+  const firstNavIndex = navItems.length;
 
   const code = el('div', 'code');
   for (const line of block.lines) {
@@ -316,17 +325,34 @@ function renderBlock(block: MatchBlock): HTMLElement {
     row.appendChild(content);
     if (line.isMatch) {
       const column = line.matches?.[0]?.startCol ?? 0;
-      const idx = navItems.length;
       navItems.push({ blockId: block.id, fileUri: block.fileUri, lineNumber: line.lineNumber, column, el: row });
-      row.onclick = () => {
-        activeIndex = idx;
-        applyActive(false);
-        openMatch(block.fileUri, line.lineNumber, column);
-      };
     }
     code.appendChild(row);
   }
   wrap.appendChild(code);
+
+  // Single click toggles selection; double-click opens. A short timer keeps the
+  // double-click from also toggling selection.
+  let clickTimer: number | undefined;
+  wrap.onclick = () => {
+    if (clickTimer !== undefined) {
+      return;
+    }
+    clickTimer = window.setTimeout(() => {
+      clickTimer = undefined;
+      activeIndex = firstNavIndex;
+      applyActive(false);
+      toggleSelection(block.id, !selected.has(block.id));
+    }, 200);
+  };
+  wrap.ondblclick = () => {
+    if (clickTimer !== undefined) {
+      window.clearTimeout(clickTimer);
+      clickTimer = undefined;
+    }
+    openMatch(block.fileUri, block.anchorLine, block.anchorColumn);
+  };
+
   return wrap;
 }
 
@@ -336,12 +362,10 @@ function toggleSelection(blockId: string, on: boolean): void {
   } else {
     selected.delete(blockId);
   }
-  const cb = resultsHost.querySelector<HTMLInputElement>(
-    `.block[data-block-id="${cssEscape(blockId)}"] .block-check`,
+  const blockEl = resultsHost.querySelector<HTMLElement>(
+    `.block[data-block-id="${cssEscape(blockId)}"]`,
   );
-  if (cb) {
-    cb.checked = on;
-  }
+  blockEl?.classList.toggle('selected', on);
   refreshActions();
 }
 
@@ -491,17 +515,15 @@ function toggle(icon: string, title: string, active: boolean, onToggle: (v: bool
 function numberField(
   label: string,
   value: number,
-  disabled: boolean,
   onChange: (v: number) => void,
 ): { wrap: HTMLElement; input: HTMLInputElement } {
-  const wrap = el('label', `num-field${disabled ? ' disabled' : ''}`);
+  const wrap = el('label', 'num-field');
   const span = el('span', 'num-label');
   span.textContent = label;
   const input = document.createElement('input');
   input.type = 'number';
   input.min = '0';
   input.value = String(value);
-  input.disabled = disabled;
   input.onchange = () => onChange(Math.max(0, parseInt(input.value, 10) || 0));
   wrap.appendChild(span);
   wrap.appendChild(input);
