@@ -35,18 +35,26 @@ unit + integration tests, and packages to a `.vsix`. See
 
 ## Install & test
 
-**Option A — install the packaged build**
+**Option A — download a release (recommended)**
 
-1. Download `enhanced-finder-0.0.1.vsix`.
-2. In VS Code: Extensions view → `…` menu → **Install from VSIX…**, or run
-   `code --install-extension enhanced-finder-0.0.1.vsix`.
-3. Open a folder (try this repo so you get the `examples/`), click the
-   **Enhanced Finder** icon in the Activity Bar, and search.
+Grab the `.vsix` for your platform from the
+[**GitHub Releases**](../../releases) page, then install it:
 
-> The packaged `.vsix` bundles a ripgrep binary for the platform it was built
-> on (this one is **linux-x64**). On a different OS, either run from source
-> (Option B, which downloads the matching ripgrep), or point
-> `enhancedFinder.ripgrepPath` at your own `rg`.
+- VS Code: Extensions view → `…` menu → **Install from VSIX…**, or
+- `code --install-extension enhanced-finder-<version>-<platform>.vsix`
+
+Platform files: `linux-x64`, `win32-x64`, `darwin-x64` (macOS Intel),
+`darwin-arm64` (macOS Apple Silicon). Each bundles the matching ripgrep binary.
+
+> Releases are produced automatically: push a tag like `v0.0.1` (or run the
+> **Release** workflow from the Actions tab) and CI builds all four platform
+> `.vsix` files and attaches them to a single GitHub Release.
+
+Then open a folder (try this repo so you get the `examples/`), click the
+**Enhanced Finder** icon in the Activity Bar, and search.
+
+> If your platform isn't published, run from source (Option B, which downloads
+> the matching ripgrep) or point `enhancedFinder.ripgrepPath` at your own `rg`.
 
 **Option B — run from source**
 

@@ -1,0 +1,99 @@
+name: Release
+
+# Builds a platform-specific .vsix on each OS (so the bundled ripgrep binary
+# matches), then publishes them all to a single GitHub Release.
+#
+# Trigger either by pushing a tag like `v0.0.1`, or manually from the Actions
+# tab (uses the version in package.json as the tag).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+          - os: windows-latest
+            target: win32-x64
+          - os: macos-13
+            target: darwin-x64
+          - os: macos-latest
+            target: darwin-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Package VSIX (${{ matrix.target }})
+        shell: bash
+        run: npx vsce package --target ${{ matrix.target }} --out "enhanced-finder-${{ steps.version.outputs.version }}-${{ matrix.target }}.vsix"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: '*.vsix'
+
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Download all VSIX artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: vsix-*
+          path: dist-vsix
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Enhanced Finder v${{ steps.version.outputs.version }}
+          draft: false
+          fail_on_unmatched_files: true
+          files: dist-vsix/*.vsix
+          body: |
+            Enhanced Finder v${{ steps.version.outputs.version }}.
+
+            Download the `.vsix` for your platform, then install with
+            **Extensions → Install from VSIX…** or
+            `code --install-extension <file>.vsix`.
+
+            | Platform | File |
+            |----------|------|
+            | Linux x64 | `enhanced-finder-${{ steps.version.outputs.version }}-linux-x64.vsix` |
+            | Windows x64 | `enhanced-finder-${{ steps.version.outputs.version }}-win32-x64.vsix` |
+            | macOS Intel | `enhanced-finder-${{ steps.version.outputs.version }}-darwin-x64.vsix` |
+            | macOS Apple Silicon | `enhanced-finder-${{ steps.version.outputs.version }}-darwin-arm64.vsix` |
