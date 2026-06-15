@@ -6,18 +6,45 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  padding: 8px;
+  /* The panel itself does not scroll — only the results list does. */
+  overflow: hidden;
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
 }
 
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 8px;
+  gap: 4px;
+}
+
 .form {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--ef-gap);
+}
+
+.actions-host {
+  flex: 0 0 auto;
+}
+
+/* The only vertically scrolling region: the file results. */
+.results-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .input-row {

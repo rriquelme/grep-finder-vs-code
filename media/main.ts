@@ -1,4 +1,8 @@
 // Webview front-end for Enhanced Finder. Vanilla TS, bundled by esbuild.
+//
+// The search form is built ONCE and never re-rendered, so typing never loses
+// focus. Only the actions bar and results list are refreshed when results
+// arrive.
 import type { FileResult, MatchBlock, SearchModel, SearchOptions } from '../src/models';
 
 interface VsCodeApi {
@@ -42,7 +46,16 @@ interface NavItem {
 let navItems: NavItem[] = [];
 let activeIndex = -1;
 
+// Persistent layout hosts (built once).
 const app = document.getElementById('app')!;
+const actionsHost = el('div', 'actions-host');
+const resultsHost = el('div', 'results-host');
+
+// References to live form controls we may need to update in place.
+let beforeInput!: HTMLInputElement;
+let afterInput!: HTMLInputElement;
+let bothInput!: HTMLInputElement;
+let contextHint!: HTMLElement;
 
 function restore(): void {
   const state = vscode.getState<PersistState>();
@@ -70,7 +83,7 @@ function scheduleSearch(): void {
 function runSearch(): void {
   persist();
   searching = options.query.trim().length > 0;
-  updateStatus();
+  refreshActions();
   vscode.postMessage({ type: 'search', options });
 }
 
@@ -95,19 +108,9 @@ function highlight(text: string, ranges?: { startCol: number; endCol: number }[]
   return html;
 }
 
-// --- rendering ---
+// --- one-time form construction ---
 
-function render(): void {
-  navItems = [];
-  app.innerHTML = '';
-  app.appendChild(renderForm());
-  app.appendChild(renderActions());
-  app.appendChild(renderResults());
-  clampActive();
-  applyActive(false);
-}
-
-function renderForm(): HTMLElement {
+function buildForm(): HTMLElement {
   const form = el('div', 'form');
 
   const query = inputRow('Search', options.query, (v) => {
@@ -140,31 +143,30 @@ function renderForm(): HTMLElement {
 
   // Context controls (grep -A / -B / -C).
   const ctx = el('div', 'context-row');
-  ctx.appendChild(
-    numberField('Before (-B)', options.contextBefore, options.contextBoth > 0, (v) => {
-      options.contextBefore = v;
-      runSearch();
-    }),
-  );
-  ctx.appendChild(
-    numberField('After (-A)', options.contextAfter, options.contextBoth > 0, (v) => {
-      options.contextAfter = v;
-      runSearch();
-    }),
-  );
-  ctx.appendChild(
-    numberField('Both (-C)', options.contextBoth, false, (v) => {
-      options.contextBoth = v;
-      render(); // re-render to enable/disable A/B
-      runSearch();
-    }),
-  );
+  const before = numberField('Before (-B)', options.contextBefore, options.contextBoth > 0, (v) => {
+    options.contextBefore = v;
+    runSearch();
+  });
+  const after = numberField('After (-A)', options.contextAfter, options.contextBoth > 0, (v) => {
+    options.contextAfter = v;
+    runSearch();
+  });
+  const both = numberField('Both (-C)', options.contextBoth, false, (v) => {
+    options.contextBoth = v;
+    syncContextDisabled();
+    runSearch();
+  });
+  beforeInput = before.input;
+  afterInput = after.input;
+  bothInput = both.input;
+  ctx.appendChild(before.wrap);
+  ctx.appendChild(after.wrap);
+  ctx.appendChild(both.wrap);
   form.appendChild(ctx);
-  if (options.contextBoth > 0) {
-    const hint = el('div', 'hint');
-    hint.textContent = 'Both (-C) overrides Before/After. Set it to 0 to use them.';
-    form.appendChild(hint);
-  }
+
+  contextHint = el('div', 'hint');
+  contextHint.textContent = 'Both (-C) overrides Before/After. Set it to 0 to use them.';
+  form.appendChild(contextHint);
 
   // Glob scope.
   const inc = inputRow('files to include', options.includeGlobs.join(', '), (v) => {
@@ -181,10 +183,37 @@ function renderForm(): HTMLElement {
   exc.input.placeholder = 'files to exclude, e.g. **/node_modules/**';
   form.appendChild(exc.row);
 
+  syncContextDisabled();
   return form;
 }
 
-function renderActions(): HTMLElement {
+/** Enable/disable the A/B fields based on whether C is active. */
+function syncContextDisabled(): void {
+  const cActive = options.contextBoth > 0;
+  for (const [input, wrap] of [
+    [beforeInput, beforeInput.parentElement],
+    [afterInput, afterInput.parentElement],
+  ] as const) {
+    input.disabled = cActive;
+    wrap?.classList.toggle('disabled', cActive);
+  }
+  contextHint.style.display = cActive ? '' : 'none';
+}
+
+// --- dynamic regions ---
+
+function refreshActions(): void {
+  actionsHost.replaceChildren(buildActions());
+}
+
+function refreshResults(): void {
+  navItems = [];
+  resultsHost.replaceChildren(buildResults());
+  clampActive();
+  applyActive(false);
+}
+
+function buildActions(): HTMLElement {
   const bar = el('div', 'actions');
   const count = selected.size;
 
@@ -205,7 +234,8 @@ function renderActions(): HTMLElement {
     clearBtn.textContent = 'Clear';
     clearBtn.onclick = () => {
       selected.clear();
-      render();
+      refreshResults();
+      refreshActions();
     };
     right.appendChild(clearBtn);
   }
@@ -230,23 +260,11 @@ function statusContent(): HTMLElement {
   return span;
 }
 
-function updateStatus(): void {
-  const status = app.querySelector('.status');
-  if (status) {
-    status.innerHTML = '';
-    status.appendChild(statusContent());
-  }
-}
-
-function renderResults(): HTMLElement {
+function buildResults(): HTMLElement {
   const container = el('div', 'results');
   if (model.files.length === 0) {
     const empty = el('div', 'empty');
-    empty.textContent = options.query.trim()
-      ? searching
-        ? 'Searching…'
-        : 'No results.'
-      : 'Type to search.';
+    empty.textContent = options.query.trim() ? (searching ? 'Searching…' : 'No results.') : 'Type to search.';
     container.appendChild(empty);
     return container;
   }
@@ -263,10 +281,7 @@ function renderFile(file: FileResult): HTMLElement {
   name.textContent = file.relPath;
   header.appendChild(name);
   const badge = el('span', 'file-count');
-  const matches = file.blocks.reduce(
-    (n, b) => n + b.lines.filter((l) => l.isMatch).length,
-    0,
-  );
+  const matches = file.blocks.reduce((n, b) => n + b.lines.filter((l) => l.isMatch).length, 0);
   badge.textContent = String(matches);
   badge.title = `${matches} match${matches === 1 ? '' : 'es'} in this file`;
   header.appendChild(badge);
@@ -302,13 +317,7 @@ function renderBlock(block: MatchBlock): HTMLElement {
     if (line.isMatch) {
       const column = line.matches?.[0]?.startCol ?? 0;
       const idx = navItems.length;
-      navItems.push({
-        blockId: block.id,
-        fileUri: block.fileUri,
-        lineNumber: line.lineNumber,
-        column,
-        el: row,
-      });
+      navItems.push({ blockId: block.id, fileUri: block.fileUri, lineNumber: line.lineNumber, column, el: row });
       row.onclick = () => {
         activeIndex = idx;
         applyActive(false);
@@ -327,17 +336,13 @@ function toggleSelection(blockId: string, on: boolean): void {
   } else {
     selected.delete(blockId);
   }
-  // Keep checkbox state in sync (when toggled via keyboard).
-  const cb = app.querySelector<HTMLInputElement>(
+  const cb = resultsHost.querySelector<HTMLInputElement>(
     `.block[data-block-id="${cssEscape(blockId)}"] .block-check`,
   );
   if (cb) {
     cb.checked = on;
   }
-  const old = app.querySelector('.actions');
-  if (old) {
-    old.replaceWith(renderActions());
-  }
+  refreshActions();
 }
 
 function selectedBlocks(): MatchBlock[] {
@@ -427,7 +432,7 @@ document.addEventListener('keydown', (e) => {
         openMatch(it.fileUri, it.lineNumber, it.column);
       }
       break;
-    case ' ': // Space toggles the active match's selection.
+    case ' ':
       if (activeIndex >= 0) {
         e.preventDefault();
         const id = navItems[activeIndex].blockId;
@@ -469,17 +474,17 @@ function inputRow(
   return { row, input };
 }
 
-function toggle(
-  icon: string,
-  title: string,
-  active: boolean,
-  onToggle: (v: boolean) => void,
-): HTMLElement {
+function toggle(icon: string, title: string, active: boolean, onToggle: (v: boolean) => void): HTMLElement {
   const b = el('button', `mini-toggle${active ? ' active' : ''}`);
   b.innerHTML = `<i class="codicon codicon-${icon}"></i>`;
   b.title = title;
   b.setAttribute('aria-pressed', String(active));
-  b.onclick = () => onToggle(!active);
+  b.onclick = () => {
+    const next = !b.classList.contains('active');
+    b.classList.toggle('active', next);
+    b.setAttribute('aria-pressed', String(next));
+    onToggle(next);
+  };
   return b;
 }
 
@@ -488,7 +493,7 @@ function numberField(
   value: number,
   disabled: boolean,
   onChange: (v: number) => void,
-): HTMLElement {
+): { wrap: HTMLElement; input: HTMLInputElement } {
   const wrap = el('label', `num-field${disabled ? ' disabled' : ''}`);
   const span = el('span', 'num-label');
   span.textContent = label;
@@ -500,7 +505,7 @@ function numberField(
   input.onchange = () => onChange(Math.max(0, parseInt(input.value, 10) || 0));
   wrap.appendChild(span);
   wrap.appendChild(input);
-  return wrap;
+  return { wrap, input };
 }
 
 // --- host messages ---
@@ -514,19 +519,22 @@ window.addEventListener('message', (event: MessageEvent) => {
         searching = false;
       }
       pruneSelection();
-      render();
+      refreshActions();
+      refreshResults();
       break;
     case 'error':
       searching = false;
       model = { files: [], truncated: false, totalMatches: 0 };
-      render();
+      refreshActions();
+      refreshResults();
       showError(msg.message as string);
       break;
     case 'config':
       if (!vscode.getState<PersistState>()) {
         options.contextBoth = msg.defaultContextLines as number;
+        bothInput.value = String(options.contextBoth);
+        syncContextDisabled();
       }
-      render();
       break;
   }
 });
@@ -548,8 +556,13 @@ function pruneSelection(): void {
 function showError(message: string): void {
   const banner = el('div', 'error-banner');
   banner.textContent = message;
-  app.prepend(banner);
+  resultsHost.prepend(banner);
 }
 
+// --- bootstrap (build the static shell once) ---
 restore();
-render();
+app.appendChild(buildForm());
+app.appendChild(actionsHost);
+app.appendChild(resultsHost);
+refreshActions();
+refreshResults();
