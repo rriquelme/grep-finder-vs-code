@@ -312,8 +312,6 @@ function renderBlock(block: MatchBlock): HTMLElement {
   wrap.dataset.blockId = block.id;
   wrap.title = 'Click to select · Double-click to open';
 
-  const firstNavIndex = navItems.length;
-
   const code = el('div', 'code');
   for (const line of block.lines) {
     const row = el('div', `line ${line.isMatch ? 'is-match' : 'is-context'}`);
@@ -331,27 +329,10 @@ function renderBlock(block: MatchBlock): HTMLElement {
   }
   wrap.appendChild(code);
 
-  // Single click toggles selection; double-click opens. A short timer keeps the
-  // double-click from also toggling selection.
-  let clickTimer: number | undefined;
-  wrap.onclick = () => {
-    if (clickTimer !== undefined) {
-      return;
-    }
-    clickTimer = window.setTimeout(() => {
-      clickTimer = undefined;
-      activeIndex = firstNavIndex;
-      applyActive(false);
-      toggleSelection(block.id, !selected.has(block.id));
-    }, 200);
-  };
-  wrap.ondblclick = () => {
-    if (clickTimer !== undefined) {
-      window.clearTimeout(clickTimer);
-      clickTimer = undefined;
-    }
-    openMatch(block.fileUri, block.anchorLine, block.anchorColumn);
-  };
+  // Single click toggles selection immediately; double-click opens. (A
+  // double-click toggles selection twice — a no-op — then opens.)
+  wrap.onclick = () => toggleSelection(block.id, !selected.has(block.id));
+  wrap.ondblclick = () => openMatch(block.fileUri, block.anchorLine, block.anchorColumn);
 
   return wrap;
 }

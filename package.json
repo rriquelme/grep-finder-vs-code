@@ -2,7 +2,7 @@
   "name": "enhanced-finder",
   "displayName": "Enhanced Finder",
   "description": "Grep-style multi-file finder with context lines and grid open for VS Code.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "enhanced-finder",
   "license": "MIT",
   "repository": {
