@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { SearchViewProvider } from './view/searchViewProvider';
 
 export function activate(context: vscode.ExtensionContext): void {
-  const provider = new SearchViewProvider(context.extensionUri);
+  const provider = new SearchViewProvider(context.extensionUri, context);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(SearchViewProvider.viewType, provider, {

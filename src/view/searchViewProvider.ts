@@ -3,6 +3,7 @@
 // extension host services.
 import * as vscode from 'vscode';
 import { SearchService } from '../search/searchService';
+import { applyEditsToModel, type LineEdit } from '../search/lineShift';
 import { openInGrid, type GridTarget } from '../grid/gridService';
 import type { MatchBlock, SearchModel, SearchOptions } from '../models';
 
@@ -23,7 +24,22 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private readonly search = new SearchService();
 
-  constructor(private readonly extensionUri: vscode.Uri) {}
+  // Current result set + last query, kept so we can sync line numbers to edits
+  // and re-run on save.
+  private model: SearchModel = emptyModel();
+  private lastOptions?: SearchOptions;
+  private postTimer?: ReturnType<typeof setTimeout>;
+  private researchTimer?: ReturnType<typeof setTimeout>;
+
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    context: vscode.ExtensionContext,
+  ) {
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeTextDocument((e) => this.onDocChange(e)),
+      vscode.workspace.onDidSaveTextDocument((d) => this.onDocSave(d)),
+    );
+  }
 
   resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.view = webviewView;
@@ -63,8 +79,10 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async runSearch(options: SearchOptions): Promise<void> {
+    this.lastOptions = options;
     if (!options.query.trim()) {
-      this.post({ type: 'results', model: emptyModel(), done: true });
+      this.model = emptyModel();
+      this.post({ type: 'results', model: this.model, done: true });
       return;
     }
     const folders = vscode.workspace.workspaceFolders;
@@ -73,13 +91,62 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     try {
-      const model = await this.search.search(options, folders, (partial) =>
-        this.post({ type: 'results', model: partial, done: false }),
-      );
+      const model = await this.search.search(options, folders, (partial) => {
+        this.model = partial;
+        this.post({ type: 'results', model: partial, done: false });
+      });
+      this.model = model;
       this.post({ type: 'results', model, done: true });
     } catch (err) {
       this.post({ type: 'error', message: String(err) });
     }
+  }
+
+  /** Live-shift stored line numbers so clicks keep landing on the right line
+   *  even before the file is saved. */
+  private onDocChange(event: vscode.TextDocumentChangeEvent): void {
+    if (this.model.files.length === 0 || event.contentChanges.length === 0) {
+      return;
+    }
+    const uri = event.document.uri.toString();
+    if (!this.model.files.some((f) => f.fileUri === uri)) {
+      return;
+    }
+    const edits: LineEdit[] = event.contentChanges.map((c) => ({
+      startLine: c.range.start.line,
+      endLine: c.range.end.line,
+      addedLines: countNewlines(c.text),
+    }));
+    if (applyEditsToModel(this.model, uri, edits)) {
+      this.schedulePost();
+    }
+  }
+
+  /** On save, re-run the search so result text and positions are authoritative. */
+  private onDocSave(doc: vscode.TextDocument): void {
+    if (!this.lastOptions?.query.trim() || this.model.files.length === 0) {
+      return;
+    }
+    if (!this.model.files.some((f) => f.fileUri === doc.uri.toString())) {
+      return;
+    }
+    if (this.researchTimer) {
+      clearTimeout(this.researchTimer);
+    }
+    this.researchTimer = setTimeout(() => {
+      if (this.lastOptions) {
+        void this.runSearch(this.lastOptions);
+      }
+    }, 200);
+  }
+
+  private schedulePost(): void {
+    if (this.postTimer) {
+      clearTimeout(this.postTimer);
+    }
+    this.postTimer = setTimeout(() => {
+      this.post({ type: 'results', model: this.model, done: true });
+    }, 150);
   }
 
   private async openSingle(fileUri: string, anchorLine: number, anchorColumn: number): Promise<void> {
@@ -134,6 +201,16 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
 
 function emptyModel(): SearchModel {
   return { files: [], truncated: false, totalMatches: 0 };
+}
+
+function countNewlines(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) === 10) {
+      n++;
+    }
+  }
+  return n;
 }
 
 export function buildGridTargets(blocks: MatchBlock[]): GridTarget[] {

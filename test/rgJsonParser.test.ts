@@ -43,7 +43,7 @@ test('parses a single match with context into one block', () => {
   assert.equal(block.lines.length, 3);
   assert.equal(block.anchorLine, 10);
   assert.equal(block.anchorColumn, 4);
-  assert.equal(block.id, 'file:///root/a.ts:10');
+  assert.ok(block.id.startsWith('file:///root/a.ts#'));
   assert.deepEqual(block.lines.map((l) => l.isMatch), [false, true, false]);
   assert.deepEqual(block.lines[1].matches, [{ startCol: 4, endCol: 7 }]);
   assert.equal(model.totalMatches, 1);

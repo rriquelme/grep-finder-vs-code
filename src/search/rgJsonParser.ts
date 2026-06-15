@@ -3,7 +3,6 @@
 //
 // Kept free of VS Code imports so it can be unit-tested with captured fixtures.
 import {
-  blockId,
   type FileResult,
   type MatchBlock,
   type MatchSubrange,
@@ -65,6 +64,7 @@ export class RgJsonParser {
   private current: { file: FileResult; block: MatchBlock | null; lastLine: number } | null = null;
   private totalMatches = 0;
   private truncated = false;
+  private blockSeq = 0;
 
   constructor(
     private readonly toRelPath: (absPath: string) => string,
@@ -162,8 +162,10 @@ export class RgJsonParser {
     // Start a new block when lines are non-contiguous (ripgrep separator).
     const contiguous = lineNumber === state.lastLine + 1;
     if (!state.block || !contiguous) {
+      // Stable id (not derived from the line number) so selection survives
+      // when lines later shift due to edits.
       state.block = {
-        id: '',
+        id: `${state.file.fileUri}#${this.blockSeq++}`,
         fileUri: state.file.fileUri,
         anchorLine: lineNumber,
         anchorColumn: 0,
@@ -180,7 +182,6 @@ export class RgJsonParser {
       if (!state.block.lines.some((l) => l.isMatch && l !== resultLine)) {
         state.block.anchorLine = lineNumber;
         state.block.anchorColumn = matches?.[0]?.startCol ?? 0;
-        state.block.id = blockId(state.file.fileUri, lineNumber);
       }
       this.totalMatches += matches?.length ?? 1;
       if (this.totalMatches >= this.maxResults) {
