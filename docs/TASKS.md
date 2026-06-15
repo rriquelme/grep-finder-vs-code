@@ -8,9 +8,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
 > **Progress (2026-06-15):** Phases **0–5 implemented** — scaffold, Activity
 > Bar view, ripgrep search core, results UI, single open, and grid open are all
-> in place and building. Unit tests (args, parser, layout) pass; `tsc`, eslint,
-> and `esbuild` are clean. Remaining: Phase 6 (settings polish, multi-root) and
-> Phase 7 (CI, integration test, packaging). Verify interactively with F5.
+> in place and building, plus **6.1 settings** and **6.2 UX polish** (codicons,
+> keyboard match navigation, loading spinner, per-file counts). Unit tests
+> (args, parser, layout) pass; `tsc`, eslint, and `esbuild` are clean. An
+> `examples/` workspace provides files across nested folders that share search
+> words for manual testing. Remaining: 6.3 (multi-root) and Phase 7 (CI,
+> integration test, packaging). Verify interactively with F5.
 
 ---
 
@@ -130,10 +133,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
   - Contribute `defaultContextLines`, `maxGridEditors`, `maxResults`,
     `useSmartCase`, `ripgrepPath`; read in services.
   - AC: changing a setting affects the next search/grid open.
-- [ ] **6.2 UX polish**
+- [x] **6.2 UX polish**
   - Codicons for toggles, keyboard nav between matches (next/prev), loading
     indicator, result counts per file/total.
   - AC: keyboard-only flow: focus → type → navigate → open grid.
+  - Keyboard: ↑/↓ move the active match, Enter opens it, Space toggles its
+    grid selection. Spinner shows while searching; per-file match counts and a
+    total/truncated status line are shown.
 - [ ] **6.3 Multi-root & no-workspace**
   - Handle multiple workspace folders (search each / pick) and the
     no-folder-open case gracefully.

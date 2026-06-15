@@ -29,6 +29,18 @@ let options: SearchOptions = { ...DEFAULT_OPTIONS };
 let model: SearchModel = { files: [], truncated: false, totalMatches: 0 };
 const selected = new Set<string>();
 let debounceTimer: number | undefined;
+let searching = false;
+
+// Keyboard navigation across match lines.
+interface NavItem {
+  blockId: string;
+  fileUri: string;
+  lineNumber: number;
+  column: number;
+  el: HTMLElement;
+}
+let navItems: NavItem[] = [];
+let activeIndex = -1;
 
 const app = document.getElementById('app')!;
 
@@ -57,21 +69,19 @@ function scheduleSearch(): void {
 
 function runSearch(): void {
   persist();
+  searching = options.query.trim().length > 0;
+  updateStatus();
   vscode.postMessage({ type: 'search', options });
 }
 
 function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function highlight(text: string, ranges?: { startCol: number; endCol: number }[]): string {
   if (!ranges || ranges.length === 0) {
     return escapeHtml(text);
   }
-  // ranges are byte offsets; for typical ASCII/UTF-8 source this maps closely.
   let html = '';
   let cursor = 0;
   for (const r of ranges) {
@@ -88,10 +98,13 @@ function highlight(text: string, ranges?: { startCol: number; endCol: number }[]
 // --- rendering ---
 
 function render(): void {
+  navItems = [];
   app.innerHTML = '';
   app.appendChild(renderForm());
   app.appendChild(renderActions());
   app.appendChild(renderResults());
+  clampActive();
+  applyActive(false);
 }
 
 function renderForm(): HTMLElement {
@@ -104,36 +117,48 @@ function renderForm(): HTMLElement {
   query.input.placeholder = 'Find in workspace…';
 
   const toggles = el('div', 'toggles');
-  toggles.appendChild(toggle('Aa', 'Case sensitive', options.caseSensitive, (v) => {
-    options.caseSensitive = v;
-    runSearch();
-  }));
-  toggles.appendChild(toggle('│ab│', 'Whole word', options.wholeWord, (v) => {
-    options.wholeWord = v;
-    runSearch();
-  }));
-  toggles.appendChild(toggle('.*', 'Regular expression', options.isRegex, (v) => {
-    options.isRegex = v;
-    runSearch();
-  }));
+  toggles.appendChild(
+    toggle('case-sensitive', 'Match case', options.caseSensitive, (v) => {
+      options.caseSensitive = v;
+      runSearch();
+    }),
+  );
+  toggles.appendChild(
+    toggle('whole-word', 'Match whole word', options.wholeWord, (v) => {
+      options.wholeWord = v;
+      runSearch();
+    }),
+  );
+  toggles.appendChild(
+    toggle('regex', 'Use regular expression', options.isRegex, (v) => {
+      options.isRegex = v;
+      runSearch();
+    }),
+  );
   query.row.appendChild(toggles);
   form.appendChild(query.row);
 
   // Context controls (grep -A / -B / -C).
   const ctx = el('div', 'context-row');
-  ctx.appendChild(numberField('Before (-B)', options.contextBefore, options.contextBoth > 0, (v) => {
-    options.contextBefore = v;
-    runSearch();
-  }));
-  ctx.appendChild(numberField('After (-A)', options.contextAfter, options.contextBoth > 0, (v) => {
-    options.contextAfter = v;
-    runSearch();
-  }));
-  ctx.appendChild(numberField('Both (-C)', options.contextBoth, false, (v) => {
-    options.contextBoth = v;
-    render(); // re-render to enable/disable A/B
-    runSearch();
-  }));
+  ctx.appendChild(
+    numberField('Before (-B)', options.contextBefore, options.contextBoth > 0, (v) => {
+      options.contextBefore = v;
+      runSearch();
+    }),
+  );
+  ctx.appendChild(
+    numberField('After (-A)', options.contextAfter, options.contextBoth > 0, (v) => {
+      options.contextAfter = v;
+      runSearch();
+    }),
+  );
+  ctx.appendChild(
+    numberField('Both (-C)', options.contextBoth, false, (v) => {
+      options.contextBoth = v;
+      render(); // re-render to enable/disable A/B
+      runSearch();
+    }),
+  );
   form.appendChild(ctx);
   if (options.contextBoth > 0) {
     const hint = el('div', 'hint');
@@ -146,14 +171,14 @@ function renderForm(): HTMLElement {
     options.includeGlobs = splitGlobs(v);
     scheduleSearch();
   });
-  inc.input.placeholder = 'e.g. src/**/*.ts';
+  inc.input.placeholder = 'files to include, e.g. src/**/*.ts';
   form.appendChild(inc.row);
 
   const exc = inputRow('files to exclude', options.excludeGlobs.join(', '), (v) => {
     options.excludeGlobs = splitGlobs(v);
     scheduleSearch();
   });
-  exc.input.placeholder = 'e.g. **/node_modules/**';
+  exc.input.placeholder = 'files to exclude, e.g. **/node_modules/**';
   form.appendChild(exc.row);
 
   return form;
@@ -163,16 +188,15 @@ function renderActions(): HTMLElement {
   const bar = el('div', 'actions');
   const count = selected.size;
 
-  const summary = el('span', 'summary');
-  summary.textContent = model.totalMatches
-    ? `${model.totalMatches} match${model.totalMatches === 1 ? '' : 'es'} in ${model.files.length} file${model.files.length === 1 ? '' : 's'}${model.truncated ? ' (truncated)' : ''}`
-    : '';
-  bar.appendChild(summary);
+  const status = el('span', 'status');
+  status.appendChild(statusContent());
+  bar.appendChild(status);
 
   const right = el('div', 'actions-right');
   const openBtn = el('button', 'btn primary') as HTMLButtonElement;
-  openBtn.textContent = count ? `Open ${count} in grid` : 'Open in grid';
+  openBtn.innerHTML = `<i class="codicon codicon-split-horizontal"></i> ${count ? `Open ${count} in grid` : 'Open in grid'}`;
   openBtn.disabled = count === 0;
+  openBtn.title = 'Open selected matches side-by-side, each at its match';
   openBtn.onclick = openGrid;
   right.appendChild(openBtn);
 
@@ -189,11 +213,40 @@ function renderActions(): HTMLElement {
   return bar;
 }
 
+function statusContent(): HTMLElement {
+  const span = el('span', 'status-inner');
+  if (searching) {
+    span.innerHTML = `<i class="codicon codicon-loading codicon-modifier-spin"></i> Searching…`;
+    return span;
+  }
+  if (model.totalMatches) {
+    const files = model.files.length;
+    span.textContent =
+      `${model.totalMatches} match${model.totalMatches === 1 ? '' : 'es'} in ` +
+      `${files} file${files === 1 ? '' : 's'}${model.truncated ? ' (truncated)' : ''}`;
+  } else {
+    span.textContent = '';
+  }
+  return span;
+}
+
+function updateStatus(): void {
+  const status = app.querySelector('.status');
+  if (status) {
+    status.innerHTML = '';
+    status.appendChild(statusContent());
+  }
+}
+
 function renderResults(): HTMLElement {
   const container = el('div', 'results');
   if (model.files.length === 0) {
     const empty = el('div', 'empty');
-    empty.textContent = options.query.trim() ? 'No results.' : 'Type to search.';
+    empty.textContent = options.query.trim()
+      ? searching
+        ? 'Searching…'
+        : 'No results.'
+      : 'Type to search.';
     container.appendChild(empty);
     return container;
   }
@@ -206,9 +259,16 @@ function renderResults(): HTMLElement {
 function renderFile(file: FileResult): HTMLElement {
   const wrap = el('div', 'file');
   const header = el('div', 'file-header');
-  header.textContent = file.relPath;
+  const name = el('span', 'file-name');
+  name.textContent = file.relPath;
+  header.appendChild(name);
   const badge = el('span', 'file-count');
-  badge.textContent = String(file.blocks.length);
+  const matches = file.blocks.reduce(
+    (n, b) => n + b.lines.filter((l) => l.isMatch).length,
+    0,
+  );
+  badge.textContent = String(matches);
+  badge.title = `${matches} match${matches === 1 ? '' : 'es'} in this file`;
   header.appendChild(badge);
   wrap.appendChild(header);
 
@@ -220,20 +280,14 @@ function renderFile(file: FileResult): HTMLElement {
 
 function renderBlock(block: MatchBlock): HTMLElement {
   const wrap = el('div', 'block');
+  wrap.dataset.blockId = block.id;
 
   const check = document.createElement('input');
   check.type = 'checkbox';
   check.className = 'block-check';
   check.checked = selected.has(block.id);
   check.title = 'Select for grid open';
-  check.onchange = () => {
-    if (check.checked) {
-      selected.add(block.id);
-    } else {
-      selected.delete(block.id);
-    }
-    renderActionsInPlace();
-  };
+  check.onchange = () => toggleSelection(block.id, check.checked);
   wrap.appendChild(check);
 
   const code = el('div', 'code');
@@ -246,13 +300,20 @@ function renderBlock(block: MatchBlock): HTMLElement {
     row.appendChild(ln);
     row.appendChild(content);
     if (line.isMatch) {
-      row.onclick = () =>
-        vscode.postMessage({
-          type: 'openMatch',
-          fileUri: block.fileUri,
-          anchorLine: line.lineNumber,
-          anchorColumn: line.matches?.[0]?.startCol ?? 0,
-        });
+      const column = line.matches?.[0]?.startCol ?? 0;
+      const idx = navItems.length;
+      navItems.push({
+        blockId: block.id,
+        fileUri: block.fileUri,
+        lineNumber: line.lineNumber,
+        column,
+        el: row,
+      });
+      row.onclick = () => {
+        activeIndex = idx;
+        applyActive(false);
+        openMatch(block.fileUri, line.lineNumber, column);
+      };
     }
     code.appendChild(row);
   }
@@ -260,11 +321,22 @@ function renderBlock(block: MatchBlock): HTMLElement {
   return wrap;
 }
 
-function renderActionsInPlace(): void {
+function toggleSelection(blockId: string, on: boolean): void {
+  if (on) {
+    selected.add(blockId);
+  } else {
+    selected.delete(blockId);
+  }
+  // Keep checkbox state in sync (when toggled via keyboard).
+  const cb = app.querySelector<HTMLInputElement>(
+    `.block[data-block-id="${cssEscape(blockId)}"] .block-check`,
+  );
+  if (cb) {
+    cb.checked = on;
+  }
   const old = app.querySelector('.actions');
-  const fresh = renderActions();
   if (old) {
-    old.replaceWith(fresh);
+    old.replaceWith(renderActions());
   }
 }
 
@@ -291,6 +363,80 @@ function openGrid(): void {
   }
 }
 
+function openMatch(fileUri: string, anchorLine: number, anchorColumn: number): void {
+  vscode.postMessage({ type: 'openMatch', fileUri, anchorLine, anchorColumn });
+}
+
+// --- keyboard navigation ---
+
+function clampActive(): void {
+  if (navItems.length === 0) {
+    activeIndex = -1;
+  } else if (activeIndex >= navItems.length) {
+    activeIndex = navItems.length - 1;
+  }
+}
+
+function applyActive(scroll: boolean): void {
+  for (const item of navItems) {
+    item.el.classList.remove('active');
+  }
+  if (activeIndex >= 0 && activeIndex < navItems.length) {
+    const item = navItems[activeIndex];
+    item.el.classList.add('active');
+    if (scroll) {
+      item.el.scrollIntoView({ block: 'nearest' });
+    }
+  }
+}
+
+function moveActive(delta: number): void {
+  if (navItems.length === 0) {
+    return;
+  }
+  if (activeIndex < 0) {
+    activeIndex = delta > 0 ? 0 : navItems.length - 1;
+  } else {
+    activeIndex = Math.min(navItems.length - 1, Math.max(0, activeIndex + delta));
+  }
+  applyActive(true);
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  const tag = (target as HTMLElement | null)?.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (isTypingTarget(e.target)) {
+    return;
+  }
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault();
+      moveActive(1);
+      break;
+    case 'ArrowUp':
+      e.preventDefault();
+      moveActive(-1);
+      break;
+    case 'Enter':
+      if (activeIndex >= 0) {
+        e.preventDefault();
+        const it = navItems[activeIndex];
+        openMatch(it.fileUri, it.lineNumber, it.column);
+      }
+      break;
+    case ' ': // Space toggles the active match's selection.
+      if (activeIndex >= 0) {
+        e.preventDefault();
+        const id = navItems[activeIndex].blockId;
+        toggleSelection(id, !selected.has(id));
+      }
+      break;
+  }
+});
+
 // --- small DOM helpers ---
 
 function el(tag: string, className?: string): HTMLElement {
@@ -299,6 +445,13 @@ function el(tag: string, className?: string): HTMLElement {
     node.className = className;
   }
   return node;
+}
+
+function cssEscape(value: string): string {
+  if (typeof CSS !== 'undefined' && CSS.escape) {
+    return CSS.escape(value);
+  }
+  return value.replace(/["\\]/g, '\\$&');
 }
 
 function inputRow(
@@ -316,17 +469,26 @@ function inputRow(
   return { row, input };
 }
 
-function toggle(text: string, title: string, active: boolean, onToggle: (v: boolean) => void): HTMLElement {
+function toggle(
+  icon: string,
+  title: string,
+  active: boolean,
+  onToggle: (v: boolean) => void,
+): HTMLElement {
   const b = el('button', `mini-toggle${active ? ' active' : ''}`);
-  b.textContent = text;
+  b.innerHTML = `<i class="codicon codicon-${icon}"></i>`;
   b.title = title;
-  b.onclick = () => {
-    onToggle(!active);
-  };
+  b.setAttribute('aria-pressed', String(active));
+  b.onclick = () => onToggle(!active);
   return b;
 }
 
-function numberField(label: string, value: number, disabled: boolean, onChange: (v: number) => void): HTMLElement {
+function numberField(
+  label: string,
+  value: number,
+  disabled: boolean,
+  onChange: (v: number) => void,
+): HTMLElement {
   const wrap = el('label', `num-field${disabled ? ' disabled' : ''}`);
   const span = el('span', 'num-label');
   span.textContent = label;
@@ -348,11 +510,14 @@ window.addEventListener('message', (event: MessageEvent) => {
   switch (msg.type) {
     case 'results':
       model = msg.model as SearchModel;
-      // Drop selections that no longer exist.
+      if (msg.done) {
+        searching = false;
+      }
       pruneSelection();
       render();
       break;
     case 'error':
+      searching = false;
       model = { files: [], truncated: false, totalMatches: 0 };
       render();
       showError(msg.message as string);

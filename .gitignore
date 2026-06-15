@@ -4,4 +4,5 @@ out/
 *.vsix
 media/main.js
 media/main.js.map
+media/codicons/
 .DS_Store

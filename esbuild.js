@@ -1,8 +1,21 @@
 // Build script for the Enhanced Finder extension.
 // Bundles the extension host (Node) and the webview front-end (browser).
 const esbuild = require('esbuild');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const watch = process.argv.includes('--watch');
+
+// Copy the codicon font + css into media/ so they ship with the extension
+// (node_modules is excluded from the packaged .vsix).
+function copyCodicons() {
+  const src = path.dirname(require.resolve('@vscode/codicons/package.json'));
+  const outDir = path.join(__dirname, 'media', 'codicons');
+  fs.mkdirSync(outDir, { recursive: true });
+  for (const file of ['codicon.css', 'codicon.ttf']) {
+    fs.copyFileSync(path.join(src, 'dist', file), path.join(outDir, file));
+  }
+}
 
 /** @type {import('esbuild').BuildOptions} */
 const extensionConfig = {
@@ -30,6 +43,7 @@ const webviewConfig = {
 };
 
 async function main() {
+  copyCodicons();
   if (watch) {
     const ctxExt = await esbuild.context(extensionConfig);
     const ctxWeb = await esbuild.context(webviewConfig);

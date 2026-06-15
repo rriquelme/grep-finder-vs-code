@@ -104,6 +104,9 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'media', 'main.css'),
     );
+    const codiconUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'codicons', 'codicon.css'),
+    );
     const csp = [
       `default-src 'none'`,
       `style-src ${webview.cspSource}`,
@@ -117,6 +120,7 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="${csp}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="${codiconUri}" rel="stylesheet" />
   <link href="${styleUri}" rel="stylesheet" />
   <title>Enhanced Finder</title>
 </head>

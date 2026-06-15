@@ -1,0 +1,48 @@
+# Enhanced Finder — example workspace
+
+These files exist so you can **test the finder**. They live in different
+folders and subfolders, they are all **unique**, but they deliberately
+**share the same words** so a single search matches across many files.
+
+## Shared tokens to search for
+
+| Search this                     | Appears in                                      |
+|---------------------------------|-------------------------------------------------|
+| `calculateInvoiceTotal`         | 6 files across `billing/`, `services/`, `reports/`, `scripts/` |
+| `enhanced-finder demo`          | a `TODO` comment in every example file          |
+| `rounding`                      | several files, with different surrounding code  |
+| `processing invoice batch`      | a log string in a few files                     |
+
+## How to test
+
+1. Press **F5** to launch the Extension Development Host with this repo open.
+2. Click the **Enhanced Finder** icon in the Activity Bar.
+3. Search `calculateInvoiceTotal`.
+   - You should see one result group **per file**, in different folders.
+   - Set **Both (-C)** to `2` to see context lines around each match (grep-style).
+4. Tick the checkbox on **4 different files**, then click **Open 4 in grid**.
+   - The editor splits into a **2×2 grid**, each pane scrolled to its match.
+   - Scroll one pane — the others stay put (independent navigation).
+5. To prove independent navigation on the *same* file, tick two matches inside
+   `billing/invoice.ts` and open them in a grid: two panes of one file, each at
+   a different line.
+
+## Folder map
+
+```
+examples/
+  billing/
+    invoice.ts
+    legacy/
+      invoice_v1.ts
+  services/
+    orders/
+      order-service.ts
+      helpers/
+        totals.ts
+  reports/
+    monthly/
+      summary.ts
+  scripts/
+    migrate.js
+```
