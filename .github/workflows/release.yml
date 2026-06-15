@@ -1,7 +1,8 @@
 name: Release
 
-# Builds a platform-specific .vsix on each OS (so the bundled ripgrep binary
-# matches), then publishes them all to a single GitHub Release.
+# Builds a single, platform-independent .vsix and publishes it to a GitHub
+# Release. The extension uses the ripgrep that VS Code already ships, so no
+# native binary is bundled and one file works on every platform.
 #
 # Trigger either by pushing a tag like `v0.0.1`, or manually from the Actions
 # tab (uses the version in package.json as the tag).
@@ -16,20 +17,8 @@ permissions:
   contents: write
 
 jobs:
-  package:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: linux-x64
-          - os: windows-latest
-            target: win32-x64
-          - os: macos-13
-            target: darwin-x64
-          - os: macos-latest
-            target: darwin-arm64
-    runs-on: ${{ matrix.os }}
+  release:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -46,35 +35,10 @@ jobs:
 
       - name: Resolve version
         id: version
-        shell: bash
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Package VSIX (${{ matrix.target }})
-        shell: bash
-        run: npx vsce package --target ${{ matrix.target }} --out "enhanced-finder-${{ steps.version.outputs.version }}-${{ matrix.target }}.vsix"
-
-      - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: vsix-${{ matrix.target }}
-          path: '*.vsix'
-
-  release:
-    needs: package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Resolve version
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Download all VSIX artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: vsix-*
-          path: dist-vsix
-          merge-multiple: true
+      - name: Package VSIX
+        run: npx vsce package --out "enhanced-finder-${{ steps.version.outputs.version }}.vsix"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -83,17 +47,13 @@ jobs:
           name: Enhanced Finder v${{ steps.version.outputs.version }}
           draft: false
           fail_on_unmatched_files: true
-          files: dist-vsix/*.vsix
+          files: enhanced-finder-${{ steps.version.outputs.version }}.vsix
           body: |
             Enhanced Finder v${{ steps.version.outputs.version }}.
 
-            Download the `.vsix` for your platform, then install with
+            Download `enhanced-finder-${{ steps.version.outputs.version }}.vsix`
+            (works on every platform) and install it with
             **Extensions → Install from VSIX…** or
-            `code --install-extension <file>.vsix`.
+            `code --install-extension enhanced-finder-${{ steps.version.outputs.version }}.vsix`.
 
-            | Platform | File |
-            |----------|------|
-            | Linux x64 | `enhanced-finder-${{ steps.version.outputs.version }}-linux-x64.vsix` |
-            | Windows x64 | `enhanced-finder-${{ steps.version.outputs.version }}-win32-x64.vsix` |
-            | macOS Intel | `enhanced-finder-${{ steps.version.outputs.version }}-darwin-x64.vsix` |
-            | macOS Apple Silicon | `enhanced-finder-${{ steps.version.outputs.version }}-darwin-arm64.vsix` |
+            Uses the ripgrep bundled with your VS Code installation.

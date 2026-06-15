@@ -82,7 +82,7 @@
         "enhancedFinder.ripgrepPath": {
           "type": "string",
           "default": "",
-          "description": "Optional absolute path to a ripgrep (rg) binary. Leave empty to use the bundled ripgrep."
+          "description": "Optional absolute path to a ripgrep (rg) binary. Leave empty to use the ripgrep that VS Code ships with (falling back to 'rg' on your PATH)."
         }
       }
     }
@@ -103,6 +103,7 @@
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/codicons": "^0.0.35",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^2.32.0",
     "esbuild": "^0.20.0",
@@ -112,8 +113,5 @@
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   },
-  "dependencies": {
-    "@vscode/codicons": "^0.0.35",
-    "@vscode/ripgrep": "^1.15.9"
-  }
+  "dependencies": {}
 }

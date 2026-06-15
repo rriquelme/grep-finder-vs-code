@@ -2,6 +2,8 @@
 // searches and resolves the ripgrep binary path. Supports multi-root workspaces
 // by passing every folder path to a single ripgrep invocation.
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { buildRgArgs } from './args';
 import { RgJsonParser } from './rgJsonParser';
@@ -94,12 +96,33 @@ export class SearchService {
   }
 }
 
+/**
+ * Resolve a ripgrep binary without bundling one. Order of preference:
+ *   1. The `enhancedFinder.ripgrepPath` setting, if set.
+ *   2. The ripgrep that VS Code ships (under `vscode.env.appRoot`) — every
+ *      install has it because the built-in Search uses it.
+ *   3. `rg` on the PATH.
+ */
 function resolveRgPath(override: string): string {
   if (override && override.trim()) {
     return override.trim();
   }
-  // Lazily require so the parser/arg tests stay dependency-free.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { rgPath } = require('@vscode/ripgrep') as { rgPath: string };
-  return rgPath;
+
+  const exe = process.platform === 'win32' ? 'rg.exe' : 'rg';
+  const root = vscode.env.appRoot;
+  if (root) {
+    const candidates = [
+      path.join(root, 'node_modules', '@vscode', 'ripgrep', 'bin', exe),
+      path.join(root, 'node_modules.asar.unpacked', '@vscode', 'ripgrep', 'bin', exe),
+      path.join(root, 'node_modules', 'vscode-ripgrep', 'bin', exe),
+    ];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  // Last resort: assume ripgrep is on the PATH.
+  return exe;
 }
