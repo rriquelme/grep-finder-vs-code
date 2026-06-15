@@ -43,7 +43,6 @@ export class SearchService {
     }
 
     const config = vscode.workspace.getConfiguration('enhancedFinder');
-    const useSmartCase = config.get<boolean>('useSmartCase', true);
     const maxResults = config.get<number>('maxResults', 2000);
 
     const override = (config.get<string>('ripgrepPath', '') || '').trim();
@@ -61,7 +60,7 @@ export class SearchService {
 
     const multiRoot = folders.length > 1;
     const searchPaths = folders.map((f) => f.uri.fsPath);
-    const args = [...buildRgArgs(opts, { useSmartCase }), ...searchPaths];
+    const args = [...buildRgArgs(opts), ...searchPaths];
 
     log(`rg: ${rgPath}`);
     log(`args: ${args.join(' ')}`);

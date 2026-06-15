@@ -2,18 +2,14 @@
 // can be unit-tested without VS Code or a real ripgrep binary.
 import type { SearchOptions } from '../models';
 
-export interface ArgBuildContext {
-  /** Use smart-case when the user has not forced case sensitivity. */
-  useSmartCase: boolean;
-}
-
 /**
  * Build the ripgrep argument vector (excluding the binary path and the search
  * root, which the caller appends). Always requests JSON output.
  *
- * Context semantics mirror grep/ripgrep: `-C` (contextBoth) overrides `-A`/`-B`.
+ * Case handling matches VS Code's own search: "Match case" off means fully
+ * case-insensitive (no surprising smart-case behavior).
  */
-export function buildRgArgs(opts: SearchOptions, ctx: ArgBuildContext): string[] {
+export function buildRgArgs(opts: SearchOptions): string[] {
   const args: string[] = ['--json'];
 
   // Pattern interpretation.
@@ -24,11 +20,9 @@ export function buildRgArgs(opts: SearchOptions, ctx: ArgBuildContext): string[]
     args.push('--word-regexp');
   }
 
-  // Case handling.
+  // Case handling: on = case-sensitive, off = always case-insensitive.
   if (opts.caseSensitive) {
     args.push('--case-sensitive');
-  } else if (ctx.useSmartCase) {
-    args.push('--smart-case');
   } else {
     args.push('--ignore-case');
   }

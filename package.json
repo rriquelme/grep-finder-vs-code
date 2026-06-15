@@ -2,7 +2,7 @@
   "name": "enhanced-finder",
   "displayName": "Enhanced Finder",
   "description": "Grep-style multi-file finder with context lines and grid open for VS Code.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "enhanced-finder",
   "license": "MIT",
   "repository": {
@@ -73,11 +73,6 @@
           "type": "number",
           "default": 2000,
           "description": "Maximum number of matches to collect per search before truncating."
-        },
-        "enhancedFinder.useSmartCase": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use smart case (case-insensitive unless the query contains an uppercase letter)."
         },
         "enhancedFinder.ripgrepPath": {
           "type": "string",
