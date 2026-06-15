@@ -26,7 +26,8 @@ Enhanced Finder fixes both:
 ## Status
 
 📐 **Planning.** This repository currently contains the design and roadmap.
-See [`docs/DESIGN.md`](docs/DESIGN.md) for the full plan.
+See [`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and
+[`docs/TASKS.md`](docs/TASKS.md) for the actionable, phase-by-phase task list.
 
 ## Core features (planned)
 
