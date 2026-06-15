@@ -33,6 +33,8 @@ const DEFAULT_OPTIONS: SearchOptions = {
 let options: SearchOptions = { ...DEFAULT_OPTIONS };
 let model: SearchModel = { files: [], truncated: false, totalMatches: 0 };
 const selected = new Set<string>();
+// File URIs whose results are collapsed (showing only the file title).
+const collapsed = new Set<string>();
 let debounceTimer: number | undefined;
 let searching = false;
 
@@ -236,6 +238,16 @@ function buildActions(): HTMLElement {
   bar.appendChild(status);
 
   const right = el('div', 'actions-right');
+
+  if (model.files.length > 0) {
+    const allCollapsed = model.files.every((f) => collapsed.has(f.fileUri));
+    const collapseBtn = el('button', 'btn icon-btn') as HTMLButtonElement;
+    collapseBtn.innerHTML = `<i class="codicon codicon-${allCollapsed ? 'expand-all' : 'collapse-all'}"></i>`;
+    collapseBtn.title = allCollapsed ? 'Expand all files' : 'Collapse all files';
+    collapseBtn.onclick = toggleCollapseAll;
+    right.appendChild(collapseBtn);
+  }
+
   const openBtn = el('button', 'btn primary') as HTMLButtonElement;
   openBtn.innerHTML = `<i class="codicon codicon-split-horizontal"></i> ${count ? `Open ${count} in grid` : 'Open in grid'}`;
   openBtn.disabled = count === 0;
@@ -290,7 +302,11 @@ function buildResults(): HTMLElement {
 
 function renderFile(file: FileResult): HTMLElement {
   const wrap = el('div', 'file');
+  const isCollapsed = collapsed.has(file.fileUri);
+
   const header = el('div', 'file-header');
+  const chevron = el('i', `codicon codicon-chevron-${isCollapsed ? 'right' : 'down'} file-chevron`);
+  header.appendChild(chevron);
   const name = el('span', 'file-name');
   name.textContent = file.relPath;
   header.appendChild(name);
@@ -299,12 +315,38 @@ function renderFile(file: FileResult): HTMLElement {
   badge.textContent = String(matches);
   badge.title = `${matches} match${matches === 1 ? '' : 'es'} in this file`;
   header.appendChild(badge);
+  header.title = isCollapsed ? 'Expand' : 'Collapse';
+  header.onclick = () => toggleFileCollapse(file.fileUri);
   wrap.appendChild(header);
 
-  for (const block of file.blocks) {
-    wrap.appendChild(renderBlock(block));
+  // Skip rendering (and keyboard-indexing) hidden matches when collapsed.
+  if (!isCollapsed) {
+    for (const block of file.blocks) {
+      wrap.appendChild(renderBlock(block));
+    }
   }
   return wrap;
+}
+
+function toggleFileCollapse(fileUri: string): void {
+  if (collapsed.has(fileUri)) {
+    collapsed.delete(fileUri);
+  } else {
+    collapsed.add(fileUri);
+  }
+  refreshResults();
+}
+
+function toggleCollapseAll(): void {
+  const anyExpanded = model.files.some((f) => !collapsed.has(f.fileUri));
+  if (anyExpanded) {
+    for (const f of model.files) {
+      collapsed.add(f.fileUri);
+    }
+  } else {
+    collapsed.clear();
+  }
+  refreshResults();
 }
 
 function renderBlock(block: MatchBlock): HTMLElement {
