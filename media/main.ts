@@ -122,6 +122,23 @@ function buildForm(): HTMLElement {
   });
   query.input.placeholder = 'Find in workspace…';
 
+  // Select the existing query on focus so a click + typing replaces it. The
+  // mouseup guard stops the focusing click from collapsing that selection.
+  let selectOnMouseUp = false;
+  query.input.addEventListener('focus', () => {
+    selectOnMouseUp = true;
+    query.input.select();
+  });
+  query.input.addEventListener('mouseup', (e) => {
+    if (selectOnMouseUp) {
+      e.preventDefault();
+      selectOnMouseUp = false;
+    }
+  });
+  query.input.addEventListener('blur', () => {
+    selectOnMouseUp = false;
+  });
+
   const toggles = el('div', 'toggles');
   toggles.appendChild(
     toggle('case-sensitive', 'Match case', options.caseSensitive, (v) => {
