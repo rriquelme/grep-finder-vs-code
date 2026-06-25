@@ -73,13 +73,15 @@ folder contains files across nested folders that share search words — see
 ## Usage
 
 1. Type a query. Toggle **case** / **whole word** / **regex** with the buttons.
-2. Set context lines: **Before (-B)**, **After (-A)**, or **Both (-C)** — `-C`
-   overrides the other two, like grep.
+   "Match case" off is always case-insensitive.
+2. Set context lines: **Before (-B)**, **After (-A)**, or **Both (-C)**.
+   Clicking into one group makes it active and grays out the other (values are
+   kept, not reset).
 3. Results are grouped by file with context lines and highlighted matches.
-   - **Click** a match to open it at that line.
-   - **↑/↓** move the active match, **Enter** opens it, **Space** ticks it for
-     the grid.
-4. Tick several matches and press **Open N in grid** to tile them (2×2, 3-up,
+   - **Click** a result to select it (rounded highlight); **double-click** opens
+     it at that line. Collapse a file with its chevron, or collapse all.
+   - **↑/↓** move the active match, **Enter** opens it, **Space** selects it.
+4. Select several matches and press **Open N in grid** to tile them (2×2, 3-up,
    3×3…). Each opens scrolled to its match and scrolls **independently** —
    select two matches in one file to compare two regions of it.
 
@@ -89,12 +91,45 @@ folder contains files across nested folders that share search words — see
 - Find across the workspace like a normal find (case sensitivity, whole
   word, regex, include/exclude globs), powered by ripgrep.
 - Context-line controls: `-A N`, `-B N`, `-C N` (after / before / both).
-- Results grouped by file with rendered context lines and highlighted matches.
-- Single-click "open at match" reveal; full keyboard navigation.
+- Results grouped by file with context lines and highlighted matches;
+  per-file and collapse-all minimize.
+- Click-to-select, double-click to open; full keyboard navigation.
+- Result positions stay in sync as you edit files.
 - Multi-select matches → "Open in grid" (2×2, 3-up, etc.), each revealed at
   its match line and independently navigable.
 - Multi-root workspace aware; configurable via `enhancedFinder.*` settings.
 
+## Settings
+
+- `enhancedFinder.defaultContextLines` — default context lines (default `2`).
+- `enhancedFinder.maxGridEditors` — max editors opened by "Open in grid" (default `9`).
+- `enhancedFinder.maxResults` — match cap per search before truncating (default `2000`).
+- `enhancedFinder.ripgrepPath` — optional path to your own `rg`. For safety this is
+  ignored in **untrusted** workspaces.
+
+## Privacy & security
+
+- **Local only.** All searching runs locally via ripgrep. The extension makes
+  **no network requests** and collects **no telemetry**.
+- **No runtime dependencies.** The packaged extension bundles only its own code
+  and the codicon font — no third-party runtime npm packages.
+- **Read-only.** It reads files to search and opens them in the editor; it never
+  writes to your files.
+- **Workspace trust.** Searching works in untrusted workspaces, but a
+  workspace-supplied `enhancedFinder.ripgrepPath` is ignored there so an untrusted
+  folder can't point the extension at an arbitrary executable.
+
 ## Tech
 
 TypeScript · VS Code Extension API · ripgrep (`--json`) · esbuild · Webview UI.
+
+## License & disclaimer
+
+Released under the [MIT License](LICENSE) — free and open source.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. To the maximum extent permitted by law, the authors and contributors
+are **not liable** for any claim, damages, data loss, or other liability arising
+from the use of this software. You use it **at your own risk**. "VS Code" and
+"Visual Studio Code" are trademarks of Microsoft; this is an independent,
+unaffiliated project. ripgrep is © its authors under the MIT/Unlicense terms.

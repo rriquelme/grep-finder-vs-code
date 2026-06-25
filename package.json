@@ -2,15 +2,29 @@
   "name": "enhanced-finder",
   "displayName": "Enhanced Finder",
   "description": "Grep-style multi-file finder with context lines and grid open for VS Code.",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "publisher": "enhanced-finder",
   "license": "MIT",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/rriquelme/enhanced-finder-vs-code.git"
   },
+  "bugs": {
+    "url": "https://github.com/rriquelme/enhanced-finder-vs-code/issues"
+  },
+  "homepage": "https://github.com/rriquelme/enhanced-finder-vs-code#readme",
   "engines": {
     "vscode": "^1.85.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Searching is read-only and runs in untrusted workspaces. For safety, a workspace-defined 'enhancedFinder.ripgrepPath' is ignored in untrusted workspaces; the editor's bundled ripgrep is used instead.",
+      "restrictedConfigurations": [
+        "enhancedFinder.ripgrepPath"
+      ]
+    }
   },
   "categories": [
     "Other"
@@ -85,6 +99,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "node esbuild.js",
+    "gen-icon": "node scripts/gen-icon.js",
     "watch": "node esbuild.js --watch",
     "lint": "eslint src --ext ts",
     "test": "node --test --import tsx test/*.test.ts",
