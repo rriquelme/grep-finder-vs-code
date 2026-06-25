@@ -174,8 +174,14 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
     const codiconUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'media', 'codicons', 'codicon.css'),
     );
+    // Locked-down CSP: no network of any kind from the webview. `default-src
+    // 'none'` already denies connect/img/frame; the explicit entries make the
+    // "no network" guarantee auditable.
     const csp = [
       `default-src 'none'`,
+      `connect-src 'none'`,
+      `img-src 'none'`,
+      `frame-src 'none'`,
       `style-src ${webview.cspSource}`,
       `script-src 'nonce-${nonce}'`,
       `font-src ${webview.cspSource}`,

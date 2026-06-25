@@ -2,6 +2,16 @@
 
 All notable changes to **Enhanced Finder** are documented here.
 
+## [0.0.11]
+- Security: documented and certified that the extension makes **no network
+  connections** (see `SECURITY.md`), and tightened the webview CSP with explicit
+  `connect-src 'none'` / `img-src 'none'` / `frame-src 'none'`.
+
+## [0.0.10]
+- Marketplace readiness: added an extension icon, `CHANGELOG.md`, a license
+  disclaimer, workspace-trust capability (a workspace-defined `ripgrepPath` is
+  ignored in untrusted workspaces), and a gated publish workflow.
+
 ## [0.0.9]
 - Selecting the search box now highlights the existing query so you can retype immediately.
 

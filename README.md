@@ -109,8 +109,12 @@ folder contains files across nested folders that share search words — see
 
 ## Privacy & security
 
-- **Local only.** All searching runs locally via ripgrep. The extension makes
-  **no network requests** and collects **no telemetry**.
+- **No internet, period.** The extension makes **no network requests** of any
+  kind — no telemetry, analytics, update checks, or remote code. It is a local
+  visual finder over the ripgrep that ships with VS Code. This is auditable and
+  reproducible — see [`SECURITY.md`](SECURITY.md) for the guarantee and the
+  exact commands to verify it yourself.
+- **Local only.** All searching runs locally via ripgrep.
 - **No runtime dependencies.** The packaged extension bundles only its own code
   and the codicon font — no third-party runtime npm packages.
 - **Read-only.** It reads files to search and opens them in the editor; it never
