@@ -2,6 +2,24 @@
 
 All notable changes to **Enhanced Finder** are documented here.
 
+## [0.0.12]
+- Docs rewritten around day-to-day use in VS Code: the extension page is now a
+  task-oriented guide (search options, context lines, results, keyboard, grid),
+  and leads with the fact that the extension works **fully offline** with no
+  installer and no network access. Contributor material moved to
+  `docs/DEVELOPMENT.md`.
+- `main` is now the repository's default branch; CI and Release workflows updated
+  to match.
+- CI now fails the build if a networking API ever appears in the shipped bundles,
+  enforcing the guarantee documented in `SECURITY.md`.
+- Release workflow lints and tests before packaging, and refuses to publish when
+  the pushed tag does not match the version in `package.json`.
+- Fixed the Publish workflow: `secrets` cannot be used in a step-level `if`, so
+  the token checks are done through job-level env vars (previously the workflow
+  would fail to run at all).
+- Both workflows package with `@vscode/vsce` (Release was still invoking the
+  deprecated `vsce` package) and `--no-update-package-json`.
+
 ## [0.0.11]
 - Security: documented and certified that the extension makes **no network
   connections** (see `SECURITY.md`), and tightened the webview CSP with explicit

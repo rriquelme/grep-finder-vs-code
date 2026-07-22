@@ -4,7 +4,7 @@ name: Release
 # Release. The extension uses the ripgrep that VS Code already ships, so no
 # native binary is bundled and one file works on every platform.
 #
-# Trigger either by pushing a tag like `v0.0.1`, or manually from the Actions
+# Trigger either by pushing a tag like `v0.0.12`, or manually from the Actions
 # tab (uses the version in package.json as the tag).
 
 on:
@@ -15,6 +15,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -30,6 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
       - name: Build
         run: npm run build
 
@@ -37,8 +47,20 @@ jobs:
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
+      # A tag-triggered release must match package.json, otherwise the release
+      # would advertise a version the .vsix does not actually contain.
+      - name: Check tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="${{ steps.version.outputs.version }}"
+          if [ "$tag" != "$pkg" ]; then
+            echo "Tag v$tag does not match package.json version $pkg" >&2
+            exit 1
+          fi
+
       - name: Package VSIX
-        run: npx vsce package --out "enhanced-finder-${{ steps.version.outputs.version }}.vsix"
+        run: npx @vscode/vsce package --no-update-package-json --out "enhanced-finder-${{ steps.version.outputs.version }}.vsix"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -56,4 +78,5 @@ jobs:
             **Extensions → Install from VSIX…** or
             `code --install-extension enhanced-finder-${{ steps.version.outputs.version }}.vsix`.
 
-            Uses the ripgrep bundled with your VS Code installation.
+            Runs fully offline: it uses the ripgrep bundled with your VS Code
+            installation and makes no network requests (see `SECURITY.md`).

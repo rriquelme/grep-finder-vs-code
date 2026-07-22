@@ -20,12 +20,15 @@ folders and subfolders, they are all **unique**, but they deliberately
 3. Search `calculateInvoiceTotal`.
    - You should see one result group **per file**, in different folders.
    - Set **Both (-C)** to `2` to see context lines around each match (grep-style).
-4. Tick the checkbox on **4 different files**, then click **Open 4 in grid**.
+4. **Click** a result in **4 different files** to select each (rounded
+   highlight), then click **Open 4 in grid**.
    - The editor splits into a **2×2 grid**, each pane scrolled to its match.
    - Scroll one pane — the others stay put (independent navigation).
-5. To prove independent navigation on the *same* file, tick two matches inside
+5. To prove independent navigation on the *same* file, select two matches inside
    `billing/invoice.ts` and open them in a grid: two panes of one file, each at
    a different line.
+6. Double-click any result to just open that one file at its match line, and use
+   the chevron on a file header (or the collapse-all button) to fold results.
 
 ## Folder map
 

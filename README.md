@@ -1,139 +1,237 @@
 # Enhanced Finder for VS Code
 
-A VS Code extension that lives in the Activity Bar (the left-hand icon
-strip, alongside Explorer, Search, Source Control, etc.) and gives you a
-**grep-style multi-file finder** with context lines and the ability to
-**open several matches side-by-side**, each scrolled to the exact match
-and navigable independently.
+Search your workspace like `grep`, then **open several matches side-by-side** —
+each editor scrolled to its own match and scrollable independently.
 
-## Why
+It lives in the Activity Bar (the icon strip on the left, next to Explorer and
+Search) and runs on the **ripgrep that VS Code already ships with**.
 
-VS Code's built-in Search is great for finding text, but:
+> **Fully offline. No installer. No network access of any kind.**
+> There is no separate binary to download, no bundled search engine, no
+> telemetry, no update check — the extension is a UI over the finder that is
+> already inside your editor. Works on an air-gapped machine, and your code never
+> leaves it. See [No internet, by design](#no-internet-by-design).
 
-- It shows only a couple of context lines per match and you can't control
-  them like `grep -A` / `-B` / `-C`.
-- When you want to compare the *same* region across several files, you end
-  up opening files one by one and scrolling each to the right spot by hand.
+---
 
-Enhanced Finder fixes both:
+## Why use it instead of the built-in Search
 
-1. **grep-style context** — choose how many lines to show **A**fter, **B**efore,
-   or both (**C**) around every match, right in the results panel.
-2. **Open matches in a grid** — pick N matches (e.g. 4) and open them in a
-   tiled editor layout. Each file opens scrolled to its match, and because
-   each is its own editor you can scroll/navigate every one independently.
+| | Built-in Search | Enhanced Finder |
+|---|---|---|
+| Context around a match | fixed, a line or two | any number of lines, `-A` / `-B` / `-C` like grep |
+| Comparing matches across files | open them one at a time, scroll each by hand | tick N matches → **one click** tiles them, each already at its match |
+| Two regions of the *same* file | not possible in one view | select both matches → two panes of that file, each at a different line |
 
-## Status
+If you've ever run `rg -C 5 someFunction` and then wished you could click the
+results open, that's this extension.
 
-✅ **Feature-complete & packaged.** The extension scaffolds, registers its
-Activity Bar view, searches via ripgrep with grep-style context across
-multi-root workspaces, renders grouped results, opens a single match, and opens
-selected matches in an independently-navigable grid. It builds, lints, passes
-unit + integration tests, and packages to a `.vsix`. See
-[`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and
-[`docs/TASKS.md`](docs/TASKS.md) for the phase-by-phase task list / progress.
+---
 
-## Install & test
+## Getting started
 
-**Option A — download a release (recommended)**
+1. Install it (see [Install](#install)) and reload VS Code.
+2. Open a folder or workspace.
+3. Click the **Enhanced Finder** icon in the Activity Bar — or press
+   <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> (<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> on macOS).
+4. Type a query. Results appear as you type, grouped by file.
 
-Grab `enhanced-finder-<version>.vsix` from the
-[**GitHub Releases**](../../releases) page — one file works on **all
-platforms** — then install it:
+### The search box
 
-- VS Code: Extensions view → `…` menu → **Install from VSIX…**, or
-- `code --install-extension enhanced-finder-<version>.vsix`
+Three toggles sit inside the search field, just like VS Code's own search.
+Focusing the box selects whatever is already there, so you can retype straight away.
 
-> Releases are produced automatically: push a tag like `v0.0.1` (or run the
-> **Release** workflow from the Actions tab) and CI builds the `.vsix` and
-> attaches it to a GitHub Release.
+- **Match case** — off is case-insensitive, on is exact case. It's a plain on/off
+  switch: no smart-case surprise where one capital letter silently changes results.
+- **Match whole word** — `-w`; `total` no longer matches `subtotal`.
+- **Use regular expression** — off searches your text literally (so `a.b` means
+  `a.b`), on treats it as a regex.
 
-Then open a folder (try this repo so you get the `examples/`), click the
-**Enhanced Finder** icon in the Activity Bar, and search.
+### Context lines (the grep part)
 
-> **ripgrep:** the extension uses the ripgrep that VS Code already ships, so
-> nothing extra to install. To use a different one, set
-> `enhancedFinder.ripgrepPath`.
+Below the query are three number fields:
 
-**Option B — run from source**
+- **Before (-B)** — lines shown above each match
+- **After (-A)** — lines shown below each match
+- **Both (-C)** — the same number above and below
 
-```bash
-npm install
-npm run build      # bundle extension + webview, copy codicons
-npm test           # unit tests (args, ripgrep parser, grid layout)
-npm run lint
-npm run package    # produce a .vsix
-```
+Only one *group* is active at a time: **Before/After**, or **Both**. Click into a
+field to activate its group — the other grays out but keeps its numbers, so you can
+flip between "5 lines of leading context" and "2 either side" without retyping.
+A hint under the fields always says which group is in effect.
 
-Then press **F5** to launch an Extension Development Host, open the
-**Enhanced Finder** icon in the Activity Bar, and search. The `examples/`
-folder contains files across nested folders that share search words — see
-[`examples/README.md`](examples/README.md) for a guided test.
+### Scoping the search
 
-## Usage
+- **files to include** — e.g. `src/**/*.ts`, or several separated by commas:
+  `src/**/*.ts, test/**/*.ts`
+- **files to exclude** — e.g. `**/node_modules/**, **/*.min.js`
 
-1. Type a query. Toggle **case** / **whole word** / **regex** with the buttons.
-   "Match case" off is always case-insensitive.
-2. Set context lines: **Before (-B)**, **After (-A)**, or **Both (-C)**.
-   Clicking into one group makes it active and grays out the other (values are
-   kept, not reset).
-3. Results are grouped by file with context lines and highlighted matches.
-   - **Click** a result to select it (rounded highlight); **double-click** opens
-     it at that line. Collapse a file with its chevron, or collapse all.
-   - **↑/↓** move the active match, **Enter** opens it, **Space** selects it.
-4. Select several matches and press **Open N in grid** to tile them (2×2, 3-up,
-   3×3…). Each opens scrolled to its match and scrolls **independently** —
-   select two matches in one file to compare two regions of it.
+Files ignored by your `.gitignore` are skipped, exactly like ripgrep on the
+command line.
 
-## Features
+### Working with results
 
-- Activity Bar container with its own icon and search view.
-- Find across the workspace like a normal find (case sensitivity, whole
-  word, regex, include/exclude globs), powered by ripgrep.
-- Context-line controls: `-A N`, `-B N`, `-C N` (after / before / both).
-- Results grouped by file with context lines and highlighted matches;
-  per-file and collapse-all minimize.
-- Click-to-select, double-click to open; full keyboard navigation.
-- Result positions stay in sync as you edit files.
-- Multi-select matches → "Open in grid" (2×2, 3-up, etc.), each revealed at
-  its match line and independently navigable.
-- Multi-root workspace aware; configurable via `enhancedFinder.*` settings.
+Each result block shows the match line (highlighted) plus its context lines, with
+real line numbers.
+
+- **Click** a block to **select** it (it gets a rounded highlight).
+- **Double-click** a block to **open** the file at that line.
+- **Click a file header** — or its chevron — to collapse/expand that file's results.
+- The **collapse/expand-all** button in the results bar folds every file at once,
+  useful when a query hits 30 files and you want to scan the file list first.
+- Result line numbers **follow your edits**: type above a match and its number
+  shifts with it; on save the search re-runs so everything is exact again.
+- The status line reports how many matches in how many files, and says
+  `(truncated)` if you hit the result cap.
+
+### Keyboard
+
+| Key | Action |
+|---|---|
+| <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Focus the Enhanced Finder view |
+| <kbd>↑</kbd> / <kbd>↓</kbd> | Move between match lines |
+| <kbd>Enter</kbd> | Open the active match |
+| <kbd>Space</kbd> | Select / deselect the active match for the grid |
+
+(Arrow keys navigate whenever focus is outside a text field.)
+
+### Open matches in a grid
+
+This is the feature the extension exists for.
+
+1. Select the matches you care about — click them, or press <kbd>Space</kbd> on
+   each while moving with the arrow keys.
+2. Click **Open N in grid** in the results bar.
+
+VS Code splits the editor area and opens every selected match in its own pane,
+centered on its match line. Each pane is a real editor, so you can scroll, edit,
+and navigate them **independently** — including two panes of the *same* file
+showing two different regions.
+
+Layouts follow the count: 2 → side by side, 3 → 3-up, 4 → 2×2, 5–6 → 2×3,
+7–9 → 3×3. The cap is configurable (`enhancedFinder.maxGridEditors`, default 9).
+
+**Try it:** search `calculateInvoiceTotal`, set **Both (-C)** to `2`, select a
+match in four different files, and press **Open 4 in grid** — four panes, each
+parked on its own copy of that function.
+
+---
+
+## Install
+
+**From a release (recommended)**
+
+Download `enhanced-finder-<version>.vsix` from the
+[GitHub Releases](https://github.com/rriquelme/Enhanced-Finder-VS-Code/releases)
+page — one file works on every platform — then either:
+
+- In VS Code: **Extensions** view → `…` menu → **Install from VSIX…**, or
+- From a terminal:
+  ```bash
+  code --install-extension enhanced-finder-<version>.vsix
+  ```
+
+Reload VS Code when prompted. Nothing else is downloaded — no post-install step,
+no companion binary, no account.
+
+**From source** — see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+---
 
 ## Settings
 
-- `enhancedFinder.defaultContextLines` — default context lines (default `2`).
-- `enhancedFinder.maxGridEditors` — max editors opened by "Open in grid" (default `9`).
-- `enhancedFinder.maxResults` — match cap per search before truncating (default `2000`).
-- `enhancedFinder.ripgrepPath` — optional path to your own `rg`. For safety this is
-  ignored in **untrusted** workspaces.
+Search for `enhancedFinder` in Settings, or edit `settings.json`:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `enhancedFinder.defaultContextLines` | `2` | Value **Both (-C)** starts at the first time you open the view. |
+| `enhancedFinder.maxGridEditors` | `9` | Most editors opened at once by **Open in grid**. Extra selections are ignored. |
+| `enhancedFinder.maxResults` | `2000` | Matches collected per search before results are truncated. |
+| `enhancedFinder.ripgrepPath` | `""` | Absolute path to your own `rg` binary. Empty uses the one bundled with VS Code, falling back to `rg` on your `PATH`. Ignored in untrusted workspaces. |
+
+---
+
+## Requirements
+
+VS Code **1.85** or newer. Nothing else — ripgrep comes with VS Code.
+
+---
 
 ## Privacy & security
 
-- **No internet, period.** The extension makes **no network requests** of any
-  kind — no telemetry, analytics, update checks, or remote code. It is a local
-  visual finder over the ripgrep that ships with VS Code. This is auditable and
-  reproducible — see [`SECURITY.md`](SECURITY.md) for the guarantee and the
-  exact commands to verify it yourself.
-- **Local only.** All searching runs locally via ripgrep.
-- **No runtime dependencies.** The packaged extension bundles only its own code
-  and the codicon font — no third-party runtime npm packages.
+### No internet, by design
+
+**Enhanced Finder makes no network requests of any kind.** No telemetry, no
+analytics, no update checks, no remote code, no crash reporting. Your source code,
+your queries, and your file names never leave your machine — so it is safe to use
+on private, proprietary, or air-gapped codebases.
+
+- **Nothing to install beyond the extension.** It shells out to the ripgrep that
+  is already part of your VS Code installation, so there is no downloader, no
+  bundled search binary, and no first-run setup.
+- **No runtime dependencies.** The packaged extension ships only its own compiled
+  code and the codicon font (`"dependencies": {}`).
+- **The results UI can't reach the network either.** The webview runs under a
+  strict Content Security Policy including `connect-src 'none'`, which blocks
+  `fetch`, `XMLHttpRequest`, and `WebSocket` outright.
 - **Read-only.** It reads files to search and opens them in the editor; it never
   writes to your files.
-- **Workspace trust.** Searching works in untrusted workspaces, but a
-  workspace-supplied `enhancedFinder.ripgrepPath` is ignored there so an untrusted
-  folder can't point the extension at an arbitrary executable.
+- **No shell.** ripgrep is launched with an argument array, never a shell string,
+  so search text can't be interpreted as a command.
+- **Workspace trust.** Search works in untrusted workspaces, but a
+  workspace-supplied `enhancedFinder.ripgrepPath` is ignored there, so an
+  untrusted folder can't point the extension at an arbitrary executable.
 
-## Tech
+Don't take our word for it — [`SECURITY.md`](SECURITY.md) lists the exact
+commands to verify all of this yourself against a checkout or an unzipped
+`.vsix`. CI runs that same check on every push.
 
-TypeScript · VS Code Extension API · ripgrep (`--json`) · esbuild · Webview UI.
+---
+
+## Troubleshooting
+
+**"Open a folder to search."** — the extension searches workspace folders, so open
+a folder or workspace first.
+
+**Could not find ripgrep / search errors** — VS Code has moved its bundled ripgrep
+around across versions. Set `enhancedFinder.ripgrepPath` to an `rg` binary on your
+machine (`which rg` / `where rg`) and search again. Details are logged to the
+**Enhanced Finder** output channel.
+
+**Results say "(truncated)"** — you hit `enhancedFinder.maxResults`. Narrow the
+query, add an include glob, or raise the setting.
+
+**A file I expected is missing** — it's probably in `.gitignore`, or excluded by
+your **files to exclude** globs.
+
+## Known limitations
+
+- Binary files are skipped (ripgrep's default).
+- Grid opening is capped at 9 editors; beyond that the panes are too small to be useful.
+- The results panel is read-only — edit in the opened editors, not in the panel.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Contributing & internals
+
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — build, test, debug, release.
+- [docs/DESIGN.md](docs/DESIGN.md) — architecture.
+- [docs/TASKS.md](docs/TASKS.md) — phase-by-phase task list.
+- [examples/README.md](examples/README.md) — sample workspace with a guided walkthrough.
+
+Built with TypeScript, the VS Code Extension API, ripgrep (`--json`), esbuild, and
+a plain webview UI.
 
 ## License & disclaimer
 
 Released under the [MIT License](LICENSE) — free and open source.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED. To the maximum extent permitted by law, the authors and contributors
-are **not liable** for any claim, damages, data loss, or other liability arising
-from the use of this software. You use it **at your own risk**. "VS Code" and
-"Visual Studio Code" are trademarks of Microsoft; this is an independent,
-unaffiliated project. ripgrep is © its authors under the MIT/Unlicense terms.
+IMPLIED. To the maximum extent permitted by law, the authors and contributors are
+**not liable** for any claim, damages, data loss, or other liability arising from
+the use of this software. You use it **at your own risk**. "VS Code" and "Visual
+Studio Code" are trademarks of Microsoft; this is an independent, unaffiliated
+project. ripgrep is © its authors under the MIT/Unlicense terms.

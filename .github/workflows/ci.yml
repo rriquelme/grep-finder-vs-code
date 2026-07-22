@@ -2,8 +2,18 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR cancels the older, still-running check.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -31,11 +41,24 @@ jobs:
       - name: Integration tests (headless)
         run: xvfb-run -a npm run test:integration
 
+      # Same packaging invocation as the Release workflow, so a broken manifest
+      # is caught on every push instead of at release time.
       - name: Package VSIX
-        run: npx @vscode/vsce package --out enhanced-finder.vsix
+        run: npx @vscode/vsce package --no-update-package-json --out enhanced-finder.vsix
+
+      # Guards the "no network" promise in SECURITY.md: fails if a networking
+      # API ever shows up in the shipped bundles.
+      - name: Verify no networking APIs in bundles
+        run: |
+          if grep -nE "fetch\(|XMLHttpRequest|WebSocket|EventSource|require\(['\"](https?|net|dns|tls)['\"]\)|axios|node-fetch" dist/extension.js media/main.js; then
+            echo "Networking API found in the shipped bundle — see SECURITY.md" >&2
+            exit 1
+          fi
+          echo "No networking APIs found."
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: enhanced-finder-vsix
           path: enhanced-finder.vsix
+          if-no-files-found: error
