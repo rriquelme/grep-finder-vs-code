@@ -121,7 +121,7 @@ parked on its own copy of that function.
 **From a release (recommended)**
 
 Download `grep-finder-<version>.vsix` from the
-[GitHub Releases](https://github.com/rriquelme/Enhanced-Finder-VS-Code/releases)
+[GitHub Releases](https://github.com/rriquelme/grep-finder-vs-code/releases)
 page — one file works on every platform — then either:
 
 - In VS Code: **Extensions** view → `…` menu → **Install from VSIX…**, or

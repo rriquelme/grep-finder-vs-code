@@ -73,4 +73,4 @@ short-lived `rg` child processes that read local files.
 ## Reporting
 
 Found a security issue? Please open an issue at
-<https://github.com/rriquelme/Enhanced-Finder-VS-Code/issues>.
+<https://github.com/rriquelme/grep-finder-vs-code/issues>.

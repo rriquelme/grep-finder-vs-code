@@ -8,12 +8,12 @@
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rriquelme/Enhanced-Finder-VS-Code.git"
+    "url": "https://github.com/rriquelme/grep-finder-vs-code.git"
   },
   "bugs": {
-    "url": "https://github.com/rriquelme/Enhanced-Finder-VS-Code/issues"
+    "url": "https://github.com/rriquelme/grep-finder-vs-code/issues"
   },
-  "homepage": "https://github.com/rriquelme/Enhanced-Finder-VS-Code#readme",
+  "homepage": "https://github.com/rriquelme/grep-finder-vs-code#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
