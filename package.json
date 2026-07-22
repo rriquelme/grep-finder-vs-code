@@ -2,7 +2,7 @@
   "name": "grep-finder",
   "displayName": "Grep Finder",
   "description": "Grep-style multi-file finder: control context lines like -A/-B/-C and open several matches side-by-side, each at its own match. Fully offline, no network access, uses the ripgrep already bundled with VS Code.",
-  "version": "0.0.12",
+  "version": "0.1.0",
   "publisher": "RobertoRiquelmeSaez",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -109,7 +109,7 @@
     "test": "node --test --import tsx test/*.test.ts",
     "compile:integration": "tsc -p tsconfig.integration.json",
     "test:integration": "npm run build && npm run compile:integration && node out/test/integration/runTest.js",
-    "package": "npm run build && vsce package --no-update-package-json"
+    "package": "npm run build && npx @vscode/vsce package --no-update-package-json"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

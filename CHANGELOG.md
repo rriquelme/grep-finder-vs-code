@@ -2,7 +2,12 @@
 
 All notable changes to **Grep Finder** are documented here.
 
-## [0.0.12]
+## [0.1.0]
+
+First release under the name **Grep Finder**, and the first one prepared for the
+VS Code Marketplace. Everything below was developed as 0.0.12 but never shipped
+under that number.
+
 - **Renamed to Grep Finder** (was "Enhanced Finder") ahead of the first
   Marketplace release, so the name matches what people actually search for.
   This renames the extension id (`grep-finder`), the publisher

@@ -4,7 +4,7 @@ name: Release
 # Release. The extension uses the ripgrep that VS Code already ships, so no
 # native binary is bundled and one file works on every platform.
 #
-# Trigger either by pushing a tag like `v0.0.12`, or manually from the Actions
+# Trigger either by pushing a tag like `v0.1.0`, or manually from the Actions
 # tab (uses the version in package.json as the tag).
 
 on:

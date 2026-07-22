@@ -98,8 +98,8 @@ rather than at release time.
 3. Commit and push to `main`.
 4. Tag and push:
    ```bash
-   git tag v0.0.12
-   git push origin v0.0.12
+   git tag v0.1.0
+   git push origin v0.1.0
    ```
 
 `.github/workflows/release.yml` then lints, tests, builds, verifies the tag matches
