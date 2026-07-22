@@ -1,4 +1,4 @@
-# Enhanced Finder — example workspace
+# Grep Finder — example workspace
 
 These files exist so you can **test the finder**. They live in different
 folders and subfolders, they are all **unique**, but they deliberately
@@ -9,14 +9,14 @@ folders and subfolders, they are all **unique**, but they deliberately
 | Search this                     | Appears in                                      |
 |---------------------------------|-------------------------------------------------|
 | `calculateInvoiceTotal`         | 6 files across `billing/`, `services/`, `reports/`, `scripts/` |
-| `enhanced-finder demo`          | a `TODO` comment in every example file          |
+| `grep-finder demo`          | a `TODO` comment in every example file          |
 | `rounding`                      | several files, with different surrounding code  |
 | `processing invoice batch`      | a log string in a few files                     |
 
 ## How to test
 
 1. Press **F5** to launch the Extension Development Host with this repo open.
-2. Click the **Enhanced Finder** icon in the Activity Bar.
+2. Click the **Grep Finder** icon in the Activity Bar.
 3. Search `calculateInvoiceTotal`.
    - You should see one result group **per file**, in different folders.
    - Set **Both (-C)** to `2` to see context lines around each match (grep-style).

@@ -1,4 +1,4 @@
-// Shared data model for Enhanced Finder. Used by both the extension host and,
+// Shared data model for Grep Finder. Used by both the extension host and,
 // in serialized form, the webview front-end.
 
 /** A highlight range (columns are 0-based, end exclusive) within a match line. */

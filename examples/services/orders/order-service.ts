@@ -6,7 +6,7 @@ interface Order {
   lines: { price: number; quantity: number }[];
 }
 
-// TODO: unify rounding across services (enhanced-finder demo).
+// TODO: unify rounding across services (grep-finder demo).
 export function chargeOrder(order: Order): number {
   const total = calculateInvoiceTotal(order.lines);
   if (total <= 0) {

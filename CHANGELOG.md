@@ -1,8 +1,14 @@
 # Changelog
 
-All notable changes to **Enhanced Finder** are documented here.
+All notable changes to **Grep Finder** are documented here.
 
 ## [0.0.12]
+- **Renamed to Grep Finder** (was "Enhanced Finder") ahead of the first
+  Marketplace release, so the name matches what people actually search for.
+  This renames the extension id (`grep-finder`), the publisher
+  (`RobertoRiquelmeSaez`), the view and command ids, and the settings prefix:
+  `enhancedFinder.*` → `grepFinder.*`. Nothing had been published yet, so no
+  installed extension or existing setting is affected.
 - Docs rewritten around day-to-day use in VS Code: the extension page is now a
   task-oriented guide (search options, context lines, results, keyboard, grid),
   and leads with the fact that the extension works **fully offline** with no
@@ -59,7 +65,7 @@ All notable changes to **Enhanced Finder** are documented here.
 
 ## [0.0.2]
 - Fixed ripgrep discovery for VS Code 1.122+ (`@vscode/ripgrep-universal`); errors
-  are now surfaced and logged to the "Enhanced Finder" output channel.
+  are now surfaced and logged to the "Grep Finder" output channel.
 
 ## [0.0.1]
 - Initial release: Activity Bar finder powered by ripgrep, grep-style `-A`/`-B`/`-C`

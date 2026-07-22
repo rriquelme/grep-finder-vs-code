@@ -1,6 +1,6 @@
 // services/orders/helpers/totals.ts — small helpers used by the order service.
 
-// TODO: unify rounding across services (enhanced-finder demo).
+// TODO: unify rounding across services (grep-finder demo).
 // This helper duplicates calculateInvoiceTotal — a refactor target.
 export function calculateInvoiceTotal(prices: number[]): number {
   const subtotal = prices.reduce((a, b) => a + b, 0);

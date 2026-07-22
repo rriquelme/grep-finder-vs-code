@@ -1,28 +1,28 @@
 {
-  "name": "enhanced-finder",
-  "displayName": "Enhanced Finder",
+  "name": "grep-finder",
+  "displayName": "Grep Finder",
   "description": "Grep-style multi-file finder: control context lines like -A/-B/-C and open several matches side-by-side, each at its own match. Fully offline, no network access, uses the ripgrep already bundled with VS Code.",
   "version": "0.0.12",
-  "publisher": "enhanced-finder",
+  "publisher": "RobertoRiquelmeSaez",
   "license": "MIT",
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rriquelme/enhanced-finder-vs-code.git"
+    "url": "https://github.com/rriquelme/Enhanced-Finder-VS-Code.git"
   },
   "bugs": {
-    "url": "https://github.com/rriquelme/enhanced-finder-vs-code/issues"
+    "url": "https://github.com/rriquelme/Enhanced-Finder-VS-Code/issues"
   },
-  "homepage": "https://github.com/rriquelme/enhanced-finder-vs-code#readme",
+  "homepage": "https://github.com/rriquelme/Enhanced-Finder-VS-Code#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",
-      "description": "Searching is read-only and runs in untrusted workspaces. For safety, a workspace-defined 'enhancedFinder.ripgrepPath' is ignored in untrusted workspaces; the editor's bundled ripgrep is used instead.",
+      "description": "Searching is read-only and runs in untrusted workspaces. For safety, a workspace-defined 'grepFinder.ripgrepPath' is ignored in untrusted workspaces; the editor's bundled ripgrep is used instead.",
       "restrictedConfigurations": [
-        "enhancedFinder.ripgrepPath"
+        "grepFinder.ripgrepPath"
       ]
     }
   },
@@ -46,53 +46,53 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "enhancedFinder",
-          "title": "Enhanced Finder",
+          "id": "grepFinder",
+          "title": "Grep Finder",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "enhancedFinder": [
+      "grepFinder": [
         {
-          "id": "enhancedFinder.searchView",
+          "id": "grepFinder.searchView",
           "type": "webview",
-          "name": "Enhanced Finder"
+          "name": "Grep Finder"
         }
       ]
     },
     "commands": [
       {
-        "command": "enhancedFinder.focus",
-        "title": "Enhanced Finder: Focus Search"
+        "command": "grepFinder.focus",
+        "title": "Grep Finder: Focus Search"
       }
     ],
     "keybindings": [
       {
-        "command": "enhancedFinder.focus",
+        "command": "grepFinder.focus",
         "key": "ctrl+alt+f",
         "mac": "cmd+alt+f"
       }
     ],
     "configuration": {
-      "title": "Enhanced Finder",
+      "title": "Grep Finder",
       "properties": {
-        "enhancedFinder.defaultContextLines": {
+        "grepFinder.defaultContextLines": {
           "type": "number",
           "default": 2,
           "description": "Default number of context lines (both before and after) shown around each match."
         },
-        "enhancedFinder.maxGridEditors": {
+        "grepFinder.maxGridEditors": {
           "type": "number",
           "default": 9,
           "description": "Maximum number of editors opened at once when using 'Open in grid'."
         },
-        "enhancedFinder.maxResults": {
+        "grepFinder.maxResults": {
           "type": "number",
           "default": 2000,
           "description": "Maximum number of matches to collect per search before truncating."
         },
-        "enhancedFinder.ripgrepPath": {
+        "grepFinder.ripgrepPath": {
           "type": "string",
           "default": "",
           "description": "Optional absolute path to a ripgrep (rg) binary. Leave empty to use the ripgrep that VS Code ships with (falling back to 'rg' on your PATH)."

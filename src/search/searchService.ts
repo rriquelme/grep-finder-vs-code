@@ -10,7 +10,7 @@ import type { SearchModel, SearchOptions } from '../models';
 
 let channel: vscode.OutputChannel | undefined;
 function log(message: string): void {
-  channel ??= vscode.window.createOutputChannel('Enhanced Finder');
+  channel ??= vscode.window.createOutputChannel('Grep Finder');
   channel.appendLine(message);
 }
 
@@ -42,7 +42,7 @@ export class SearchService {
       return { files: [], truncated: false, totalMatches: 0 };
     }
 
-    const config = vscode.workspace.getConfiguration('enhancedFinder');
+    const config = vscode.workspace.getConfiguration('grepFinder');
     const maxResults = config.get<number>('maxResults', 2000);
 
     const override = (config.get<string>('ripgrepPath', '') || '').trim();
@@ -126,7 +126,7 @@ export class SearchService {
         cleanup();
         log(`spawn error: ${String(err)}`);
         const hint =
-          ' Set "enhancedFinder.ripgrepPath" to a ripgrep binary.' +
+          ' Set "grepFinder.ripgrepPath" to a ripgrep binary.' +
           (triedLocations.length ? `\nChecked:\n  ${triedLocations.join('\n  ')}` : '');
         reject(new Error(`Could not run ripgrep at "${rgPath}": ${err.message}.${hint}`));
       });

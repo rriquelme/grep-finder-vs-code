@@ -1,6 +1,6 @@
 # Development
 
-Everything needed to build, run, test, and release Enhanced Finder.
+Everything needed to build, run, test, and release Grep Finder.
 For what the extension *does*, see the [README](../README.md); for how it's put
 together, see [DESIGN.md](DESIGN.md); for the no-network guarantee and how to
 verify it, see [SECURITY.md](../SECURITY.md).
@@ -20,7 +20,7 @@ npm run build      # bundle extension + webview, copy codicons into media/
 ## Run it
 
 Open this repo in VS Code and press <kbd>F5</kbd>. That launches an Extension
-Development Host with the extension loaded. Click the **Enhanced Finder** icon in
+Development Host with the extension loaded. Click the **Grep Finder** icon in
 its Activity Bar and search — the `examples/` folder is full of files that
 deliberately share tokens across nested directories, so it's a good target. See
 [examples/README.md](../examples/README.md) for a guided walkthrough.
@@ -38,7 +38,7 @@ deliberately share tokens across nested directories, so it's a good target. See
 | `npm test` | Unit tests (rg args, JSON parser, line shifting, grid layout) |
 | `npm run test:integration` | Builds, compiles, then runs tests in a real VS Code instance |
 | `npm run gen-icon` | Regenerate `media/icon.png` (marketplace icon) from source |
-| `npm run package` | Produce `enhanced-finder-<version>.vsix` |
+| `npm run package` | Produce `grep-finder-<version>.vsix` |
 
 Unit tests run on `node --test` via `tsx` and need no VS Code. Integration tests
 download a VS Code build through `@vscode/test-electron`; on Linux CI they run

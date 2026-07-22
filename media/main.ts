@@ -1,4 +1,4 @@
-// Webview front-end for Enhanced Finder. Vanilla TS, bundled by esbuild.
+// Webview front-end for Grep Finder. Vanilla TS, bundled by esbuild.
 //
 // The search form is built ONCE and never re-rendered, so typing never loses
 // focus. Only the actions bar and results list are refreshed when results

@@ -1,4 +1,4 @@
-// Build script for the Enhanced Finder extension.
+// Build script for the Grep Finder extension.
 // Bundles the extension host (Node) and the webview front-end (browser).
 const esbuild = require('esbuild');
 const fs = require('node:fs');

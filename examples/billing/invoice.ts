@@ -3,7 +3,7 @@ import { LineItem } from './types';
 
 const TAX_RATE = 0.21;
 
-// TODO: unify rounding across services (enhanced-finder demo).
+// TODO: unify rounding across services (grep-finder demo).
 export function calculateInvoiceTotal(items: LineItem[]): number {
   const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
   const withTax = subtotal * (1 + TAX_RATE);

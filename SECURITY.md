@@ -2,7 +2,7 @@
 
 ## No network — by design
 
-**Enhanced Finder does not communicate with the internet in any way.** It is a
+**Grep Finder does not communicate with the internet in any way.** It is a
 local visual finder: it shells out to the **ripgrep that ships with your VS Code
 installation** to search your files, and renders the results. There is no
 telemetry, no analytics, no update check, no "phone home", and no remote code.
@@ -66,11 +66,11 @@ short-lived `rg` child processes that read local files.
 - **No shell:** ripgrep is launched with an argument array (`spawn`), not a shell
   string, so search text cannot be interpreted as a command.
 - **Workspace trust:** in untrusted workspaces a workspace-supplied
-  `enhancedFinder.ripgrepPath` is ignored (see `capabilities.untrustedWorkspaces`
+  `grepFinder.ripgrepPath` is ignored (see `capabilities.untrustedWorkspaces`
   in `package.json`), so an untrusted folder cannot point the extension at an
   arbitrary executable.
 
 ## Reporting
 
 Found a security issue? Please open an issue at
-<https://github.com/rriquelme/enhanced-finder-vs-code/issues>.
+<https://github.com/rriquelme/Enhanced-Finder-VS-Code/issues>.

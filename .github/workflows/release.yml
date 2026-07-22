@@ -60,23 +60,23 @@ jobs:
           fi
 
       - name: Package VSIX
-        run: npx @vscode/vsce package --no-update-package-json --out "enhanced-finder-${{ steps.version.outputs.version }}.vsix"
+        run: npx @vscode/vsce package --no-update-package-json --out "grep-finder-${{ steps.version.outputs.version }}.vsix"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: Enhanced Finder v${{ steps.version.outputs.version }}
+          name: Grep Finder v${{ steps.version.outputs.version }}
           draft: false
           fail_on_unmatched_files: true
-          files: enhanced-finder-${{ steps.version.outputs.version }}.vsix
+          files: grep-finder-${{ steps.version.outputs.version }}.vsix
           body: |
-            Enhanced Finder v${{ steps.version.outputs.version }}.
+            Grep Finder v${{ steps.version.outputs.version }}.
 
-            Download `enhanced-finder-${{ steps.version.outputs.version }}.vsix`
+            Download `grep-finder-${{ steps.version.outputs.version }}.vsix`
             (works on every platform) and install it with
             **Extensions → Install from VSIX…** or
-            `code --install-extension enhanced-finder-${{ steps.version.outputs.version }}.vsix`.
+            `code --install-extension grep-finder-${{ steps.version.outputs.version }}.vsix`.
 
             Runs fully offline: it uses the ripgrep bundled with your VS Code
             installation and makes no network requests (see `SECURITY.md`).

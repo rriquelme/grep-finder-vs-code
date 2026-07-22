@@ -17,12 +17,12 @@ export async function openInGrid(targets: GridTarget[]): Promise<void> {
     return;
   }
 
-  const max = vscode.workspace.getConfiguration('enhancedFinder').get<number>('maxGridEditors', 9);
+  const max = vscode.workspace.getConfiguration('grepFinder').get<number>('maxGridEditors', 9);
   const count = clampCount(targets.length, max);
 
   if (targets.length > max) {
     void vscode.window.showWarningMessage(
-      `Enhanced Finder: opening the first ${max} of ${targets.length} selected matches (enhancedFinder.maxGridEditors).`,
+      `Grep Finder: opening the first ${max} of ${targets.length} selected matches (grepFinder.maxGridEditors).`,
     );
   }
 
@@ -48,7 +48,7 @@ export async function openInGrid(targets: GridTarget[]): Promise<void> {
       editor.revealRange(selection, vscode.TextEditorRevealType.InCenter);
     } catch (err) {
       void vscode.window.showErrorMessage(
-        `Enhanced Finder: could not open ${t.fileUri}: ${String(err)}`,
+        `Grep Finder: could not open ${t.fileUri}: ${String(err)}`,
       );
     }
   }

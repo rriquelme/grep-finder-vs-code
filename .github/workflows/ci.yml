@@ -44,7 +44,7 @@ jobs:
       # Same packaging invocation as the Release workflow, so a broken manifest
       # is caught on every push instead of at release time.
       - name: Package VSIX
-        run: npx @vscode/vsce package --no-update-package-json --out enhanced-finder.vsix
+        run: npx @vscode/vsce package --no-update-package-json --out grep-finder.vsix
 
       # Guards the "no network" promise in SECURITY.md: fails if a networking
       # API ever shows up in the shipped bundles.
@@ -59,6 +59,6 @@ jobs:
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v5
         with:
-          name: enhanced-finder-vsix
-          path: enhanced-finder.vsix
+          name: grep-finder-vsix
+          path: grep-finder.vsix
           if-no-files-found: error

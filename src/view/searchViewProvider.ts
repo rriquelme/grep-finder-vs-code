@@ -1,4 +1,4 @@
-// Webview view hosted in the Enhanced Finder activity-bar container. Owns the
+// Webview view hosted in the Grep Finder activity-bar container. Owns the
 // search form + results UI and routes messages between the webview and the
 // extension host services.
 import * as vscode from 'vscode';
@@ -19,7 +19,7 @@ type OutboundMessage =
   | { type: 'config'; defaultContextLines: number };
 
 export class SearchViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'enhancedFinder.searchView';
+  public static readonly viewType = 'grepFinder.searchView';
 
   private view?: vscode.WebviewView;
   private readonly search = new SearchService();
@@ -52,7 +52,7 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage((msg: InboundMessage) => this.onMessage(msg));
 
     const defaultContextLines = vscode.workspace
-      .getConfiguration('enhancedFinder')
+      .getConfiguration('grepFinder')
       .get<number>('defaultContextLines', 2);
     this.post({ type: 'config', defaultContextLines });
   }
@@ -195,7 +195,7 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="${codiconUri}" rel="stylesheet" />
   <link href="${styleUri}" rel="stylesheet" />
-  <title>Enhanced Finder</title>
+  <title>Grep Finder</title>
 </head>
 <body>
   <div id="app"></div>

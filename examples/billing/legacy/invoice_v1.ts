@@ -3,7 +3,7 @@
 
 const OLD_TAX = 0.19;
 
-// TODO: unify rounding across services (enhanced-finder demo).
+// TODO: unify rounding across services (grep-finder demo).
 export function calculateInvoiceTotal(items: Array<{ price: number; qty: number }>): number {
   let subtotal = 0;
   for (const it of items) {

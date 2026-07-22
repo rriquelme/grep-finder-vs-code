@@ -1,4 +1,4 @@
-# Enhanced Finder for VS Code
+# Grep Finder for VS Code
 
 Search your workspace like `grep`, then **open several matches side-by-side** —
 each editor scrolled to its own match and scrollable independently.
@@ -16,7 +16,7 @@ Search) and runs on the **ripgrep that VS Code already ships with**.
 
 ## Why use it instead of the built-in Search
 
-| | Built-in Search | Enhanced Finder |
+| | Built-in Search | Grep Finder |
 |---|---|---|
 | Context around a match | fixed, a line or two | any number of lines, `-A` / `-B` / `-C` like grep |
 | Comparing matches across files | open them one at a time, scroll each by hand | tick N matches → **one click** tiles them, each already at its match |
@@ -31,7 +31,7 @@ results open, that's this extension.
 
 1. Install it (see [Install](#install)) and reload VS Code.
 2. Open a folder or workspace.
-3. Click the **Enhanced Finder** icon in the Activity Bar — or press
+3. Click the **Grep Finder** icon in the Activity Bar — or press
    <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> (<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> on macOS).
 4. Type a query. Results appear as you type, grouped by file.
 
@@ -87,7 +87,7 @@ real line numbers.
 
 | Key | Action |
 |---|---|
-| <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Focus the Enhanced Finder view |
+| <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Focus the Grep Finder view |
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Move between match lines |
 | <kbd>Enter</kbd> | Open the active match |
 | <kbd>Space</kbd> | Select / deselect the active match for the grid |
@@ -108,7 +108,7 @@ and navigate them **independently** — including two panes of the *same* file
 showing two different regions.
 
 Layouts follow the count: 2 → side by side, 3 → 3-up, 4 → 2×2, 5–6 → 2×3,
-7–9 → 3×3. The cap is configurable (`enhancedFinder.maxGridEditors`, default 9).
+7–9 → 3×3. The cap is configurable (`grepFinder.maxGridEditors`, default 9).
 
 **Try it:** search `calculateInvoiceTotal`, set **Both (-C)** to `2`, select a
 match in four different files, and press **Open 4 in grid** — four panes, each
@@ -120,14 +120,14 @@ parked on its own copy of that function.
 
 **From a release (recommended)**
 
-Download `enhanced-finder-<version>.vsix` from the
+Download `grep-finder-<version>.vsix` from the
 [GitHub Releases](https://github.com/rriquelme/Enhanced-Finder-VS-Code/releases)
 page — one file works on every platform — then either:
 
 - In VS Code: **Extensions** view → `…` menu → **Install from VSIX…**, or
 - From a terminal:
   ```bash
-  code --install-extension enhanced-finder-<version>.vsix
+  code --install-extension grep-finder-<version>.vsix
   ```
 
 Reload VS Code when prompted. Nothing else is downloaded — no post-install step,
@@ -139,14 +139,14 @@ no companion binary, no account.
 
 ## Settings
 
-Search for `enhancedFinder` in Settings, or edit `settings.json`:
+Search for `grepFinder` in Settings, or edit `settings.json`:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `enhancedFinder.defaultContextLines` | `2` | Value **Both (-C)** starts at the first time you open the view. |
-| `enhancedFinder.maxGridEditors` | `9` | Most editors opened at once by **Open in grid**. Extra selections are ignored. |
-| `enhancedFinder.maxResults` | `2000` | Matches collected per search before results are truncated. |
-| `enhancedFinder.ripgrepPath` | `""` | Absolute path to your own `rg` binary. Empty uses the one bundled with VS Code, falling back to `rg` on your `PATH`. Ignored in untrusted workspaces. |
+| `grepFinder.defaultContextLines` | `2` | Value **Both (-C)** starts at the first time you open the view. |
+| `grepFinder.maxGridEditors` | `9` | Most editors opened at once by **Open in grid**. Extra selections are ignored. |
+| `grepFinder.maxResults` | `2000` | Matches collected per search before results are truncated. |
+| `grepFinder.ripgrepPath` | `""` | Absolute path to your own `rg` binary. Empty uses the one bundled with VS Code, falling back to `rg` on your `PATH`. Ignored in untrusted workspaces. |
 
 ---
 
@@ -160,7 +160,7 @@ VS Code **1.85** or newer. Nothing else — ripgrep comes with VS Code.
 
 ### No internet, by design
 
-**Enhanced Finder makes no network requests of any kind.** No telemetry, no
+**Grep Finder makes no network requests of any kind.** No telemetry, no
 analytics, no update checks, no remote code, no crash reporting. Your source code,
 your queries, and your file names never leave your machine — so it is safe to use
 on private, proprietary, or air-gapped codebases.
@@ -178,7 +178,7 @@ on private, proprietary, or air-gapped codebases.
 - **No shell.** ripgrep is launched with an argument array, never a shell string,
   so search text can't be interpreted as a command.
 - **Workspace trust.** Search works in untrusted workspaces, but a
-  workspace-supplied `enhancedFinder.ripgrepPath` is ignored there, so an
+  workspace-supplied `grepFinder.ripgrepPath` is ignored there, so an
   untrusted folder can't point the extension at an arbitrary executable.
 
 Don't take our word for it — [`SECURITY.md`](SECURITY.md) lists the exact
@@ -193,11 +193,11 @@ commands to verify all of this yourself against a checkout or an unzipped
 a folder or workspace first.
 
 **Could not find ripgrep / search errors** — VS Code has moved its bundled ripgrep
-around across versions. Set `enhancedFinder.ripgrepPath` to an `rg` binary on your
+around across versions. Set `grepFinder.ripgrepPath` to an `rg` binary on your
 machine (`which rg` / `where rg`) and search again. Details are logged to the
-**Enhanced Finder** output channel.
+**Grep Finder** output channel.
 
-**Results say "(truncated)"** — you hit `enhancedFinder.maxResults`. Narrow the
+**Results say "(truncated)"** — you hit `grepFinder.maxResults`. Narrow the
 query, add an include glob, or raise the setting.
 
 **A file I expected is missing** — it's probably in `.gitignore`, or excluded by

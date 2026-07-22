@@ -1,6 +1,6 @@
 // scripts/migrate.js — one-off migration script (plain JS, no types).
 
-// TODO: unify rounding across services (enhanced-finder demo).
+// TODO: unify rounding across services (grep-finder demo).
 function calculateInvoiceTotal(rows) {
   var subtotal = 0;
   for (var i = 0; i < rows.length; i++) {

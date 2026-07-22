@@ -1,4 +1,4 @@
-# Enhanced Finder — Design & Implementation Plan
+# Grep Finder — Design & Implementation Plan
 
 ## 1. Goal
 
@@ -18,7 +18,7 @@ Build a VS Code extension that:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Activity Bar container "Enhanced Finder" (custom icon)    │
+│ Activity Bar container "Grep Finder" (custom icon)    │
 │   └── Webview View: search form + grouped results         │
 └───────────────┬─────────────────────────────────────────┘
                 │ postMessage  ▲ results / state
@@ -130,7 +130,7 @@ line). The checkbox builds the grid selection.
 
 Given the selected match blocks (each = file URI + anchor line):
 
-1. **Compute a layout** for N (capped by `enhancedFinder.maxGridEditors`,
+1. **Compute a layout** for N (capped by `grepFinder.maxGridEditors`,
    default 9):
    - 1 → single
    - 2 → 1×2 (side by side)
@@ -168,38 +168,38 @@ the "navigate independently" requirement.
 "contributes": {
   "viewsContainers": {
     "activitybar": [{
-      "id": "enhancedFinder",
-      "title": "Enhanced Finder",
+      "id": "grepFinder",
+      "title": "Grep Finder",
       "icon": "media/icon.svg"
     }]
   },
   "views": {
-    "enhancedFinder": [{
-      "id": "enhancedFinder.searchView",
+    "grepFinder": [{
+      "id": "grepFinder.searchView",
       "type": "webview",
-      "name": "Enhanced Finder"
+      "name": "Grep Finder"
     }]
   },
   "commands": [
-    { "command": "enhancedFinder.focus",     "title": "Enhanced Finder: Focus Search" },
-    { "command": "enhancedFinder.openGrid",  "title": "Enhanced Finder: Open Selected in Grid" }
+    { "command": "grepFinder.focus",     "title": "Grep Finder: Focus Search" },
+    { "command": "grepFinder.openGrid",  "title": "Grep Finder: Open Selected in Grid" }
   ],
   "keybindings": [
-    { "command": "enhancedFinder.focus", "key": "ctrl+alt+f", "mac": "cmd+alt+f" }
+    { "command": "grepFinder.focus", "key": "ctrl+alt+f", "mac": "cmd+alt+f" }
   ],
   "configuration": {
-    "title": "Enhanced Finder",
+    "title": "Grep Finder",
     "properties": {
-      "enhancedFinder.defaultContextLines": { "type": "number", "default": 2 },
-      "enhancedFinder.maxGridEditors":      { "type": "number", "default": 9 },
-      "enhancedFinder.maxResults":          { "type": "number", "default": 2000 },
-      "enhancedFinder.useSmartCase":        { "type": "boolean", "default": true }
+      "grepFinder.defaultContextLines": { "type": "number", "default": 2 },
+      "grepFinder.maxGridEditors":      { "type": "number", "default": 9 },
+      "grepFinder.maxResults":          { "type": "number", "default": 2000 },
+      "grepFinder.useSmartCase":        { "type": "boolean", "default": true }
     }
   }
 }
 ```
 
-`activationEvents`: `onView:enhancedFinder.searchView` (and the focus command).
+`activationEvents`: `onView:grepFinder.searchView` (and the focus command).
 
 ## 7. Proposed file structure
 

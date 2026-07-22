@@ -20,15 +20,15 @@ function options(overrides: Partial<SearchOptions> = {}): SearchOptions {
   };
 }
 
-suite('Enhanced Finder integration', () => {
+suite('Grep Finder integration', () => {
   suiteSetup(async () => {
-    const ext = vscode.extensions.getExtension('enhanced-finder.enhanced-finder');
+    const ext = vscode.extensions.getExtension('RobertoRiquelmeSaez.grep-finder');
     await ext?.activate();
   });
 
   test('registers the focus command', async () => {
     const commands = await vscode.commands.getCommands(true);
-    assert.ok(commands.includes('enhancedFinder.focus'), 'focus command should be registered');
+    assert.ok(commands.includes('grepFinder.focus'), 'focus command should be registered');
   });
 
   test('finds a shared token across nested folders', async () => {

@@ -1,4 +1,4 @@
-# Enhanced Finder — Actionable Task Breakdown
+# Grep Finder — Actionable Task Breakdown
 
 Granular, checkable tasks to take the project from empty repo to a packaged
 extension. Tasks are ordered; each lists **what to do**, the **deliverable**,
@@ -21,7 +21,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 ## Phase 0 — Project scaffold
 
 - [x] **0.1 Init Node/TS project**
-  - Add `package.json` (name `enhanced-finder`, publisher placeholder,
+  - Add `package.json` (name `grep-finder`, publisher placeholder,
     `engines.vscode`), `tsconfig.json`, `.gitignore`, `.vscodeignore`.
   - AC: `npm install` succeeds; `tsc --noEmit` runs clean on an empty `src/`.
 - [x] **0.2 Dev dependencies**
@@ -42,7 +42,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
 
 - [x] **1.1 Activity Bar container + view**
   - In `package.json contributes`: `viewsContainers.activitybar` id
-    `enhancedFinder` + `views` webview `enhancedFinder.searchView`.
+    `grepFinder` + `views` webview `grepFinder.searchView`.
   - AC: a new icon appears in the Activity Bar; clicking shows an empty view.
 - [x] **1.2 Icon asset**
   - Add `media/icon.svg` (monochrome, matches codicon style).
@@ -52,7 +52,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done.
     `media/main.js` + `media/main.css` via CSP nonce; `retainContextWhenHidden`.
   - AC: webview renders a "Hello" UI and survives hide/show without reload.
 - [x] **1.4 Focus command + keybinding**
-  - `enhancedFinder.focus` command + `ctrl+alt+f` / `cmd+alt+f`.
+  - `grepFinder.focus` command + `ctrl+alt+f` / `cmd+alt+f`.
   - AC: keybinding reveals and focuses the search input.
 
 ## Phase 2 — Search core (ripgrep)

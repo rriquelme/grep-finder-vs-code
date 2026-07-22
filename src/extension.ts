@@ -8,7 +8,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider(SearchViewProvider.viewType, provider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
-    vscode.commands.registerCommand('enhancedFinder.focus', () => provider.focus()),
+    vscode.commands.registerCommand('grepFinder.focus', () => provider.focus()),
   );
 }
 
