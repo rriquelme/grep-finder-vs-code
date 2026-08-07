@@ -28,6 +28,7 @@ const DEFAULT_OPTIONS: SearchOptions = {
   contextMode: 'both',
   includeGlobs: [],
   excludeGlobs: [],
+  openFilesOnly: false,
 };
 
 let options: SearchOptions = { ...DEFAULT_OPTIONS };
@@ -207,6 +208,14 @@ function buildForm(): HTMLElement {
   });
   exc.input.placeholder = 'files to exclude, e.g. **/node_modules/**';
   form.appendChild(exc.row);
+
+  // Scope: restrict the search to files open in editor tabs.
+  form.appendChild(
+    checkRow('Search only in open files', !!options.openFilesOnly, (v) => {
+      options.openFilesOnly = v;
+      runSearch();
+    }),
+  );
 
   syncContextDisabled();
   return form;
@@ -536,6 +545,19 @@ function inputRow(
   input.oninput = () => onInput(input.value);
   row.appendChild(input);
   return { row, input };
+}
+
+function checkRow(label: string, checked: boolean, onChange: (v: boolean) => void): HTMLElement {
+  const row = el('label', 'check-row');
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  input.onchange = () => onChange(input.checked);
+  const span = el('span', 'check-label');
+  span.textContent = label;
+  row.appendChild(input);
+  row.appendChild(span);
+  return row;
 }
 
 function toggle(icon: string, title: string, active: boolean, onToggle: (v: boolean) => void): HTMLElement {

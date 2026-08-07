@@ -30,11 +30,15 @@ export class SearchService {
    * periodically with the model built so far, and resolves with the final
    * model. Relative paths are folder-prefixed when more than one folder is
    * searched, so results from different roots stay distinguishable.
+   *
+   * When `restrictToPaths` is provided (e.g. the set of open files), ripgrep
+   * searches exactly those paths instead of the whole workspace.
    */
   async search(
     opts: SearchOptions,
     folders: readonly vscode.WorkspaceFolder[],
     onUpdate?: (model: SearchModel) => void,
+    restrictToPaths?: readonly string[],
   ): Promise<SearchModel> {
     this.cancel();
 
@@ -59,7 +63,10 @@ export class SearchService {
     }
 
     const multiRoot = folders.length > 1;
-    const searchPaths = folders.map((f) => f.uri.fsPath);
+    const searchPaths =
+      restrictToPaths && restrictToPaths.length > 0
+        ? [...restrictToPaths]
+        : folders.map((f) => f.uri.fsPath);
     const args = [...buildRgArgs(opts), ...searchPaths];
 
     log(`rg: ${rgPath}`);

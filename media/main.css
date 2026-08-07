@@ -132,6 +132,22 @@ body {
   color: var(--vscode-descriptionForeground);
 }
 
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check-row input {
+  margin: 0;
+}
+
+.check-label {
+  font-size: 12px;
+}
+
 .actions {
   display: flex;
   align-items: center;

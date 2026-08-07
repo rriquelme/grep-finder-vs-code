@@ -67,6 +67,8 @@ export interface SearchOptions {
   includeGlobs: string[];
   /** Comma/newline separated exclude globs. */
   excludeGlobs: string[];
+  /** Restrict the search to files currently open in editor tabs. */
+  openFilesOnly?: boolean;
 }
 
 export function blockId(fileUri: string, anchorLine: number): string {

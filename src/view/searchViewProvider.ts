@@ -38,6 +38,8 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
     context.subscriptions.push(
       vscode.workspace.onDidChangeTextDocument((e) => this.onDocChange(e)),
       vscode.workspace.onDidSaveTextDocument((d) => this.onDocSave(d)),
+      // When "only open files" is active, keep results in sync as tabs change.
+      vscode.window.tabGroups.onDidChangeTabs(() => this.onTabsChanged()),
     );
   }
 
@@ -90,16 +92,47 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
       this.post({ type: 'error', message: 'Open a folder to search.' });
       return;
     }
+
+    let restrictToPaths: string[] | undefined;
+    if (options.openFilesOnly) {
+      restrictToPaths = openFilePaths();
+      if (restrictToPaths.length === 0) {
+        this.model = emptyModel();
+        this.post({ type: 'results', model: this.model, done: true });
+        return;
+      }
+    }
+
     try {
-      const model = await this.search.search(options, folders, (partial) => {
-        this.model = partial;
-        this.post({ type: 'results', model: partial, done: false });
-      });
+      const model = await this.search.search(
+        options,
+        folders,
+        (partial) => {
+          this.model = partial;
+          this.post({ type: 'results', model: partial, done: false });
+        },
+        restrictToPaths,
+      );
       this.model = model;
       this.post({ type: 'results', model, done: true });
     } catch (err) {
       this.post({ type: 'error', message: String(err) });
     }
+  }
+
+  /** Re-run when tabs change, but only while the "open files only" scope is on. */
+  private onTabsChanged(): void {
+    if (!this.lastOptions?.openFilesOnly || !this.lastOptions.query.trim()) {
+      return;
+    }
+    if (this.researchTimer) {
+      clearTimeout(this.researchTimer);
+    }
+    this.researchTimer = setTimeout(() => {
+      if (this.lastOptions) {
+        void this.runSearch(this.lastOptions);
+      }
+    }, 200);
   }
 
   /** Live-shift stored line numbers so clicks keep landing on the right line
@@ -207,6 +240,25 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
 
 function emptyModel(): SearchModel {
   return { files: [], truncated: false, totalMatches: 0 };
+}
+
+/** Absolute paths of files currently open in editor tabs (file scheme only). */
+function openFilePaths(): string[] {
+  const set = new Set<string>();
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      const input = tab.input;
+      if (input instanceof vscode.TabInputText && input.uri.scheme === 'file') {
+        set.add(input.uri.fsPath);
+      } else if (
+        input instanceof vscode.TabInputTextDiff &&
+        input.modified.scheme === 'file'
+      ) {
+        set.add(input.modified.fsPath);
+      }
+    }
+  }
+  return [...set];
 }
 
 function countNewlines(text: string): number {
