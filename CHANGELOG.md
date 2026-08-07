@@ -2,6 +2,13 @@
 
 All notable changes to **Grep Finder** are documented here.
 
+## [Unreleased]
+
+- Build only: GitHub Actions updated to Node 24 runtimes (`upload-artifact` v7,
+  `action-gh-release` v3), clearing the Node 20 deprecation warning. The release
+  workflow can also now be dispatched with an exact version number. No change to
+  the extension itself.
+
 ## [0.1.1]
 
 - Added a "Search only in open files" checkbox that restricts the search to files

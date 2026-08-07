@@ -49,7 +49,7 @@ No prettier or `.editorconfig`; follow the surrounding code (2-space indent, sin
 
 ## Release
 
-Releasing is automated by `.github/workflows/auto-release.yml`, which runs after CI succeeds on `main`. **Do not hand-bump `version` in `package.json`** — the workflow does it, and a manual bump will collide with the next automated one.
+Releasing is automated by `.github/workflows/auto-release.yml`, which runs after CI succeeds on `main`. **Do not hand-bump `version` in `package.json`** — the workflow does it, and a hand-edit is not itself a release, so the next automated run just bumps past it. To pin a specific number, dispatch **Auto Release** with the `version` input (bare `X.Y.Z`); it overrides the level and implies force.
 
 To ship work: add bullets under `## [Unreleased]` in `CHANGELOG.md` and push to `main`. Those bullets become the release notes and the heading is rewritten to the new version.
 

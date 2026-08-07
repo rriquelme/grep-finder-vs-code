@@ -35,6 +35,10 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      version:
+        description: Exact version to release, e.g. 0.1.12 (overrides the level)
+        type: string
+        default: ''
       level:
         description: Version bump level
         type: choice
@@ -74,10 +78,29 @@ jobs:
           VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
           FORCE: ${{ inputs.force }}
           LEVEL_INPUT: ${{ inputs.level }}
+          VERSION_INPUT: ${{ inputs.version }}
         run: |
           set -euo pipefail
           release=true
           reason=""
+
+          # An exact version pins the number outright. Asking for one is always
+          # deliberate, so it implies force — otherwise the changed-path check
+          # could swallow the very release you dispatched by hand.
+          exact=""
+          if [ -n "${VERSION_INPUT:-}" ]; then
+            if ! printf '%s' "$VERSION_INPUT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "version input '$VERSION_INPUT' is not a bare X.Y.Z version" >&2
+              exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/v$VERSION_INPUT" >/dev/null 2>&1; then
+              echo "tag v$VERSION_INPUT already exists — pick a version that has not shipped" >&2
+              exit 1
+            fi
+            exact="$VERSION_INPUT"
+            FORCE=true
+            echo "Exact version requested: $exact"
+          fi
 
           # CI verified a specific commit. If main has since moved, let the
           # newer commit's own CI run decide — releasing here would ship code
@@ -148,11 +171,14 @@ jobs:
 
           echo "release=$release" >> "$GITHUB_OUTPUT"
           echo "level=$level" >> "$GITHUB_OUTPUT"
+          echo "exact=$exact" >> "$GITHUB_OUTPUT"
 
-          if [ "$release" = true ]; then
-            echo "Releasing with a $level bump." | tee -a "$GITHUB_STEP_SUMMARY"
-          else
+          if [ "$release" != true ]; then
             echo "No release: $reason" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$exact" ]; then
+            echo "Releasing exact version $exact." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Releasing with a $level bump." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/setup-node@v5
@@ -170,11 +196,15 @@ jobs:
       - name: Bump version
         id: bump
         if: steps.decide.outputs.release == 'true'
+        env:
+          EXACT: ${{ steps.decide.outputs.exact }}
+          LEVEL: ${{ steps.decide.outputs.level }}
         run: |
           set -euo pipefail
-          new="$(npm version "${{ steps.decide.outputs.level }}" --no-git-tag-version)"
+          # `npm version` takes either a bump keyword or a literal version.
+          new="$(npm version "${EXACT:-$LEVEL}" --no-git-tag-version)"
           echo "version=${new#v}" >> "$GITHUB_OUTPUT"
-          echo "Bumped to ${new#v}."
+          echo "Set version to ${new#v}."
 
       - name: Update CHANGELOG and collect release notes
         if: steps.decide.outputs.release == 'true'
@@ -227,7 +257,7 @@ jobs:
 
       - name: Publish GitHub Release
         if: steps.decide.outputs.release == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.bump.outputs.version }}
           name: Grep Finder v${{ steps.bump.outputs.version }}

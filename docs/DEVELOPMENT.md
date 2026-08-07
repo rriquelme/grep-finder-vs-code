@@ -128,7 +128,13 @@ The bump commit is pushed with `GITHUB_TOKEN`, and GitHub does not start workflo
 runs from those, so this cannot loop back into CI.
 
 **Manual releases** still work. Run **Auto Release** from the Actions tab to pick
-the bump level explicitly, or to force a release when no shipped files changed.
+the bump level explicitly, to force a release when no shipped files changed, or to
+set an exact version — fill in **version** with something like `0.1.12` and that
+number is used verbatim, overriding the level. It is rejected if it is not a bare
+`X.Y.Z` or if that tag already exists, and it implies force. Prefer this over
+editing `version` in `package.json` by hand: a hand-edit is not the release, so
+the next automated run would bump straight past it.
+
 Pushing a `v*` tag by hand triggers `.github/workflows/release.yml`, which builds
 and releases whatever `package.json` says (failing if tag and version disagree).
 
