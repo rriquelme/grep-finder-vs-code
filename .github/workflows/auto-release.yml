@@ -8,10 +8,14 @@ name: Auto Release
 #
 # A release is cut only when shipped code changed (src/, media/, package.json)
 # since the last v* tag. Doc, CI, and test-only commits are skipped. Put
-# `[skip release]` in a commit message to opt out of that one release.
+# `[skip release]` in the SUBJECT LINE of the tip commit to opt out of that one
+# release.
 #
-# Bump level is patch by default; put `#minor` or `#major` anywhere in a commit
-# message since the last tag to bump that level instead.
+# Bump level is patch by default; put `#minor` or `#major` in the SUBJECT LINE
+# of any commit since the last tag to bump that level instead.
+#
+# Markers are read from subject lines only, never bodies — see the note in the
+# decide step for why.
 #
 # Two deliberate details:
 #   - The bump commit is pushed with GITHUB_TOKEN, and GitHub does not start new
@@ -94,9 +98,9 @@ jobs:
           if [ "$FORCE" = "true" ]; then
             echo "force=true — skipping the [skip release] and changed-path checks."
           else
-            if [ "$release" = true ] && git log -1 --format=%B | grep -qiF '[skip release]'; then
+            if [ "$release" = true ] && git log -1 --format=%s | grep -qiF '[skip release]'; then
               release=false
-              reason="HEAD commit is marked [skip release]."
+              reason="HEAD commit subject is marked [skip release]."
             fi
 
             # Only ship when something that actually ends up in the VSIX moved.
@@ -113,18 +117,24 @@ jobs:
           fi
 
           # Bump level: explicit dispatch input wins, else commit-message markers.
+          #
+          # Only subject lines are scanned, never bodies. A body is prose, and
+          # prose that explains these markers (a commit documenting this very
+          # workflow, say) would otherwise be read as a directive — which is
+          # exactly how the first run of this workflow cut a 1.0.0 by mistake.
+          # A marker is also required to stand alone, so "#majority" is inert.
           level=patch
           if [ -n "${LEVEL_INPUT:-}" ] && [ "$LEVEL_INPUT" != "auto" ]; then
             level="$LEVEL_INPUT"
           else
             if [ -n "$range" ]; then
-              messages="$(git log "$range" --format=%B)"
+              subjects="$(git log "$range" --format=%s)"
             else
-              messages="$(git log -1 --format=%B)"
+              subjects="$(git log -1 --format=%s)"
             fi
-            if printf '%s' "$messages" | grep -qiF '#major'; then
+            if printf '%s\n' "$subjects" | grep -qiE '(^|[[:space:]])#major([[:space:]]|$)'; then
               level=major
-            elif printf '%s' "$messages" | grep -qiF '#minor'; then
+            elif printf '%s\n' "$subjects" | grep -qiE '(^|[[:space:]])#minor([[:space:]]|$)'; then
               level=minor
             fi
           fi

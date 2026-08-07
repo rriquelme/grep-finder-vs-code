@@ -53,7 +53,9 @@ Releasing is automated by `.github/workflows/auto-release.yml`, which runs after
 
 To ship work: add bullets under `## [Unreleased]` in `CHANGELOG.md` and push to `main`. Those bullets become the release notes and the heading is rewritten to the new version.
 
-Commit-message controls: `#minor` / `#major` change the bump level (patch otherwise) and are honoured anywhere in the commits since the last tag; `[skip release]` on the tip commit suppresses that release. A release is skipped entirely unless `src/`, `media/`, or `package.json` changed since the last `v*` tag.
+Commit **subject line** controls: `#minor` / `#major` change the bump level (patch otherwise) and are honoured across every commit since the last tag; `[skip release]` on the tip commit suppresses that release. A release is skipped entirely unless `src/`, `media/`, or `package.json` changed since the last `v*` tag.
+
+Markers are matched in subjects only, never bodies, and must stand alone. This matters when writing commit messages *about* the release system: a body that merely mentions `#major` used to be obeyed, which cut a spurious `1.0.0`. Don't relax this back to `%B`.
 
 `scripts/prepare-release.js` does the changelog rewrite and is runnable by hand: `node scripts/prepare-release.js 0.1.1 notes.md [fallback.md]`.
 

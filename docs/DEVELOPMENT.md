@@ -103,14 +103,20 @@ release notes, and the heading is rewritten to the new version number for you. I
 there is no `## [Unreleased]` section, the commit subjects since the last tag are
 used instead.
 
-What you control from a commit message:
+What you control from a commit **subject line**:
 
-| Want | Put in the commit message |
+| Want | Put in the commit subject |
 | --- | --- |
 | Patch bump (`0.1.0` → `0.1.1`) | nothing — this is the default |
 | Minor bump (`0.1.0` → `0.2.0`) | `#minor` |
 | Major bump (`0.1.0` → `1.0.0`) | `#major` |
 | No release for this push | `[skip release]` |
+
+Markers are read from subject lines only, never from commit bodies. Bodies are
+prose, and prose that merely *mentions* a marker would otherwise be obeyed — the
+first run of this workflow cut a `1.0.0` because the commit body introducing it
+contained the words "`#minor` or `#major`". A marker must also stand alone, so
+`#majority` does not trigger a major bump.
 
 A release is only cut when something under `src/`, `media/`, or `package.json`
 changed since the last `v*` tag, so doc, CI, and test-only commits do not burn a
