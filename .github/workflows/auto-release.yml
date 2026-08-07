@@ -1,0 +1,227 @@
+name: Auto Release
+
+# Bumps the version and cuts a GitHub Release automatically, once CI has passed
+# on main. Chaining off CI (rather than running on push) means a release is only
+# ever built from a commit that already passed lint, unit tests, integration
+# tests, the no-network bundle check, and packaging — and the slow integration
+# suite is not run twice.
+#
+# A release is cut only when shipped code changed (src/, media/, package.json)
+# since the last v* tag. Doc, CI, and test-only commits are skipped. Put
+# `[skip release]` in a commit message to opt out of that one release.
+#
+# Bump level is patch by default; put `#minor` or `#major` anywhere in a commit
+# message since the last tag to bump that level instead.
+#
+# Two deliberate details:
+#   - The bump commit is pushed with GITHUB_TOKEN, and GitHub does not start new
+#     workflow runs from those, so this cannot loop. `[skip ci]` in the subject
+#     is a second belt.
+#   - For the same reason the pushed tag does not trigger the Release workflow,
+#     so this job creates the release itself instead of racing it. Release
+#     remains available for manual/tag-driven releases.
+#
+# Marketplace publishing stays manual — run the Publish workflow when you want a
+# release to reach users.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      level:
+        description: Version bump level
+        type: choice
+        default: auto
+        options: [auto, patch, minor, major]
+      force:
+        description: Release even if no shipped files changed
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Never cut two releases at once; a queued run re-evaluates against the new tag.
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  auto-release:
+    # Only successful CI runs that came from a push (not PRs) are release-worthy.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Decide whether to release
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          FORCE: ${{ inputs.force }}
+          LEVEL_INPUT: ${{ inputs.level }}
+        run: |
+          set -euo pipefail
+          release=true
+          reason=""
+
+          # CI verified a specific commit. If main has since moved, let the
+          # newer commit's own CI run decide — releasing here would ship code
+          # that was never checked.
+          head="$(git rev-parse HEAD)"
+          if [ "$EVENT" = "workflow_run" ] && [ "$head" != "$VERIFIED_SHA" ]; then
+            release=false
+            reason="main moved past the commit CI verified ($VERIFIED_SHA); its own run will release."
+          fi
+
+          last_tag="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+          echo "Last release tag: ${last_tag:-<none>}"
+          range=""
+          if [ -n "$last_tag" ]; then
+            range="$last_tag..HEAD"
+          fi
+
+          if [ "$FORCE" = "true" ]; then
+            echo "force=true — skipping the [skip release] and changed-path checks."
+          else
+            if [ "$release" = true ] && git log -1 --format=%B | grep -qiF '[skip release]'; then
+              release=false
+              reason="HEAD commit is marked [skip release]."
+            fi
+
+            # Only ship when something that actually ends up in the VSIX moved.
+            if [ "$release" = true ] && [ -n "$range" ]; then
+              changed="$(git diff --name-only "$range" -- src media package.json)"
+              if [ -z "$changed" ]; then
+                release=false
+                reason="no changes under src/, media/, or package.json since $last_tag."
+              else
+                echo "Shipped files changed since $last_tag:"
+                echo "$changed"
+              fi
+            fi
+          fi
+
+          # Bump level: explicit dispatch input wins, else commit-message markers.
+          level=patch
+          if [ -n "${LEVEL_INPUT:-}" ] && [ "$LEVEL_INPUT" != "auto" ]; then
+            level="$LEVEL_INPUT"
+          else
+            if [ -n "$range" ]; then
+              messages="$(git log "$range" --format=%B)"
+            else
+              messages="$(git log -1 --format=%B)"
+            fi
+            if printf '%s' "$messages" | grep -qiF '#major'; then
+              level=major
+            elif printf '%s' "$messages" | grep -qiF '#minor'; then
+              level=minor
+            fi
+          fi
+
+          # Commit subjects since the last tag, used as release notes when the
+          # CHANGELOG has no Unreleased section to promote.
+          : > fallback-notes.md
+          if [ -n "$range" ]; then
+            git log "$range" --no-merges --format='- %s' > fallback-notes.md
+          fi
+
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "level=$level" >> "$GITHUB_OUTPUT"
+
+          if [ "$release" = true ]; then
+            echo "Releasing with a $level bump." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No release: $reason" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-node@v5
+        if: steps.decide.outputs.release == 'true'
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.decide.outputs.release == 'true'
+        run: npm ci
+
+      # Updates package.json and package-lock.json together, without tagging —
+      # the tag is pushed below alongside the commit.
+      - name: Bump version
+        id: bump
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          set -euo pipefail
+          new="$(npm version "${{ steps.decide.outputs.level }}" --no-git-tag-version)"
+          echo "version=${new#v}" >> "$GITHUB_OUTPUT"
+          echo "Bumped to ${new#v}."
+
+      - name: Update CHANGELOG and collect release notes
+        if: steps.decide.outputs.release == 'true'
+        run: node scripts/prepare-release.js "${{ steps.bump.outputs.version }}" release-notes.md fallback-notes.md
+
+      - name: Build
+        if: steps.decide.outputs.release == 'true'
+        run: npm run build
+
+      # Same guard as CI, re-run against the exact bundles being shipped.
+      - name: Verify no networking APIs in bundles
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          if grep -nE "fetch\(|XMLHttpRequest|WebSocket|EventSource|require\(['\"](https?|net|dns|tls)['\"]\)|axios|node-fetch" dist/extension.js media/main.js; then
+            echo "Networking API found in the shipped bundle — see SECURITY.md" >&2
+            exit 1
+          fi
+          echo "No networking APIs found."
+
+      - name: Package VSIX
+        if: steps.decide.outputs.release == 'true'
+        run: npx @vscode/vsce package --no-update-package-json --out "grep-finder-${{ steps.bump.outputs.version }}.vsix"
+
+      # Commit and tag go up together, so main can never carry a release commit
+      # whose tag is missing. A concurrent human push makes this fail before any
+      # release is created, which is the safe direction.
+      - name: Commit, tag, and push
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          set -euo pipefail
+          version="${{ steps.bump.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "Release $version [skip ci]"
+          git tag "v$version"
+          git push --atomic origin main "v$version"
+
+      - name: Add install instructions to the release notes
+        if: steps.decide.outputs.release == 'true'
+        run: |
+          set -euo pipefail
+          version="${{ steps.bump.outputs.version }}"
+          printf '\n---\n\n' >> release-notes.md
+          printf 'Download **grep-finder-%s.vsix** (one file, works on every platform) and install it\n' "$version" >> release-notes.md
+          printf 'with **Extensions -> Install from VSIX...**, or from a terminal:\n\n' >> release-notes.md
+          printf '    code --install-extension grep-finder-%s.vsix\n\n' "$version" >> release-notes.md
+          printf 'Runs fully offline: it uses the ripgrep bundled with your VS Code installation and\n' >> release-notes.md
+          printf 'makes no network requests (see SECURITY.md).\n' >> release-notes.md
+
+      - name: Publish GitHub Release
+        if: steps.decide.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: Grep Finder v${{ steps.bump.outputs.version }}
+          draft: false
+          fail_on_unmatched_files: true
+          files: grep-finder-${{ steps.bump.outputs.version }}.vsix
+          body_path: release-notes.md

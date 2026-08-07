@@ -6,3 +6,7 @@ media/main.js
 media/main.js.map
 media/codicons/
 .DS_Store
+
+# Scratch files written by the Auto Release workflow
+release-notes.md
+fallback-notes.md

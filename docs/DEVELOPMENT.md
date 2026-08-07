@@ -88,25 +88,43 @@ verify no networking APIs in the bundles. The `.vsix` is uploaded as a build
 artifact. Packaging runs on every push so a broken manifest surfaces immediately
 rather than at release time.
 
+A successful CI run on `main` is also what triggers Auto Release (see below), so a
+release is only ever built from a commit that already passed every check.
+
 ## Releasing
 
-1. Bump `version` in `package.json`, then refresh the lockfile:
-   ```bash
-   npm install --package-lock-only
-   ```
-2. Add a section to [CHANGELOG.md](../CHANGELOG.md).
-3. Commit and push to `main`.
-4. Tag and push:
-   ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
-   ```
+Releases are automatic. `.github/workflows/auto-release.yml` runs after CI passes
+on `main` and, when there is something to ship, bumps the version, updates the
+changelog, tags, and publishes a GitHub Release with the `.vsix` attached.
 
-`.github/workflows/release.yml` then lints, tests, builds, verifies the tag matches
-`package.json` (failing the release if they disagree), packages a single
-platform-independent `.vsix`, and attaches it to a GitHub Release. You can also
-run **Release** manually from the Actions tab, in which case the version in
-`package.json` is used as the tag.
+Day to day that means: **write your changes under `## [Unreleased]` in
+[CHANGELOG.md](../CHANGELOG.md), then push to `main`.** Those bullets become the
+release notes, and the heading is rewritten to the new version number for you. If
+there is no `## [Unreleased]` section, the commit subjects since the last tag are
+used instead.
+
+What you control from a commit message:
+
+| Want | Put in the commit message |
+| --- | --- |
+| Patch bump (`0.1.0` → `0.1.1`) | nothing — this is the default |
+| Minor bump (`0.1.0` → `0.2.0`) | `#minor` |
+| Major bump (`0.1.0` → `1.0.0`) | `#major` |
+| No release for this push | `[skip release]` |
+
+A release is only cut when something under `src/`, `media/`, or `package.json`
+changed since the last `v*` tag, so doc, CI, and test-only commits do not burn a
+version. `#minor` and `#major` are looked for across every commit since that tag,
+so the marker still counts if you push more commits before a release happens;
+`[skip release]` only applies to the commit at the tip.
+
+The bump commit is pushed with `GITHUB_TOKEN`, and GitHub does not start workflow
+runs from those, so this cannot loop back into CI.
+
+**Manual releases** still work. Run **Auto Release** from the Actions tab to pick
+the bump level explicitly, or to force a release when no shipped files changed.
+Pushing a `v*` tag by hand triggers `.github/workflows/release.yml`, which builds
+and releases whatever `package.json` says (failing if tag and version disagree).
 
 Version tags are the source of truth for what shipped — don't reuse one.
 
@@ -122,4 +140,5 @@ workflow is harmless until you configure it:
 4. Run **Publish** from the Actions tab.
 
 GitHub does not re-trigger workflows for releases created with `GITHUB_TOKEN`, so
-the Release workflow will not kick off Publish automatically — run it yourself.
+neither Auto Release nor Release kicks off Publish — run it yourself. Reaching
+users is always a deliberate step, even though cutting a release is automatic.
