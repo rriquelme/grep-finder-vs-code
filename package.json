@@ -2,7 +2,7 @@
   "name": "grep-finder",
   "displayName": "Grep Finder",
   "description": "Grep-style multi-file finder: control context lines like -A/-B/-C and open several matches side-by-side, each at its own match. Fully offline, no network access, uses the ripgrep already bundled with VS Code.",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "publisher": "RobertoRiquelmeSaez",
   "license": "MIT",
   "icon": "media/icon.png",

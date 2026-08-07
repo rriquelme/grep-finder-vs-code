@@ -2,7 +2,7 @@
 
 All notable changes to **Grep Finder** are documented here.
 
-## [1.0.0]
+## [Unreleased]
 
 - Added a "Search only in open files" checkbox that restricts the search to files
   currently open in editor tabs (auto-refreshes as you open or close files).
