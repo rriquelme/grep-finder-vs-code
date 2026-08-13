@@ -4,19 +4,20 @@
 import * as vscode from 'vscode';
 import { SearchService } from '../search/searchService';
 import { applyEditsToModel, type LineEdit } from '../search/lineShift';
-import { openInGrid, type GridTarget } from '../grid/gridService';
-import type { MatchBlock, SearchModel, SearchOptions } from '../models';
+import { openInGrid } from '../grid/gridService';
+import { openInTabs } from '../grid/tabsService';
+import type { MatchBlock, OpenMode, OpenTarget, SearchModel, SearchOptions } from '../models';
 
 type InboundMessage =
   | { type: 'search'; options: SearchOptions }
   | { type: 'cancel' }
   | { type: 'openMatch'; fileUri: string; anchorLine: number; anchorColumn: number }
-  | { type: 'openGrid'; targets: GridTarget[] };
+  | { type: 'openSelection'; mode: OpenMode; targets: OpenTarget[] };
 
 type OutboundMessage =
   | { type: 'results'; model: SearchModel; done: boolean }
   | { type: 'error'; message: string }
-  | { type: 'config'; defaultContextLines: number };
+  | { type: 'config'; defaultContextLines: number; openMode: OpenMode };
 
 export class SearchViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'grepFinder.searchView';
@@ -53,10 +54,10 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.onDidReceiveMessage((msg: InboundMessage) => this.onMessage(msg));
 
-    const defaultContextLines = vscode.workspace
-      .getConfiguration('grepFinder')
-      .get<number>('defaultContextLines', 2);
-    this.post({ type: 'config', defaultContextLines });
+    const config = vscode.workspace.getConfiguration('grepFinder');
+    const defaultContextLines = config.get<number>('defaultContextLines', 2);
+    const openMode = config.get<OpenMode>('openMode', 'grid') === 'tabs' ? 'tabs' : 'grid';
+    this.post({ type: 'config', defaultContextLines, openMode });
   }
 
   focus(): void {
@@ -74,8 +75,12 @@ export class SearchViewProvider implements vscode.WebviewViewProvider {
       case 'openMatch':
         await this.openSingle(msg.fileUri, msg.anchorLine, msg.anchorColumn);
         break;
-      case 'openGrid':
-        await openInGrid(msg.targets);
+      case 'openSelection':
+        if (msg.mode === 'tabs') {
+          await openInTabs(msg.targets);
+        } else {
+          await openInGrid(msg.targets);
+        }
         break;
     }
   }
@@ -271,7 +276,7 @@ function countNewlines(text: string): number {
   return n;
 }
 
-export function buildGridTargets(blocks: MatchBlock[]): GridTarget[] {
+export function buildOpenTargets(blocks: MatchBlock[]): OpenTarget[] {
   return blocks.map((b) => ({
     fileUri: b.fileUri,
     anchorLine: b.anchorLine,

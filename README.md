@@ -90,7 +90,7 @@ real line numbers.
 | <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> | Focus the Grep Finder view |
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Move between match lines |
 | <kbd>Enter</kbd> | Open the active match |
-| <kbd>Space</kbd> | Select / deselect the active match for the grid |
+| <kbd>Space</kbd> | Select / deselect the active match for opening |
 
 (Arrow keys navigate whenever focus is outside a text field.)
 
@@ -113,6 +113,26 @@ Layouts follow the count: 2 → side by side, 3 → 3-up, 4 → 2×2, 5–6 → 
 **Try it:** search `calculateInvoiceTotal`, set **Both (-C)** to `2`, select a
 match in four different files, and press **Open 4 in grid** — four panes, each
 parked on its own copy of that function.
+
+### …or open them as tabs
+
+A grid is great for comparing a handful of matches side by side, and wrong when
+you just want to walk through twenty hits without losing the split layout you
+already had. The two small buttons left of the Open button switch between them:
+
+| | Mode | What happens |
+|---|---|---|
+| ⊟ | **grid** | Retiles the editor area, one pane per selected match (the default). |
+| 🗐 | **tabs** | Opens the selection as ordinary tabs in the **active** editor group. Your layout is left exactly as it was. |
+
+In tabs mode each tab is still centered on its match, and you land on the first
+one. A file can only have one tab, so selecting several matches in the same file
+opens it once, at the top-most of them — pick grid mode when you want to see two
+regions of one file at the same time.
+
+The button label tells you which mode you are in (**Open 4 in tabs**), the choice
+is remembered, and `grepFinder.openMode` sets which one you start in. Tabs have
+their own cap, `grepFinder.maxTabEditors` (default 20).
 
 ---
 
@@ -146,6 +166,8 @@ Search for `grepFinder` in Settings, or edit `settings.json`:
 | `grepFinder.defaultContextLines` | `2` | Value **Both (-C)** starts at the first time you open the view. |
 | `grepFinder.maxGridEditors` | `9` | Most editors opened at once by **Open in grid**. Extra selections are ignored. |
 | `grepFinder.maxResults` | `2000` | Matches collected per search before results are truncated. |
+| `grepFinder.maxTabEditors` | `20` | Most tabs opened at once by **Open in tabs**, counted per file. Extra selections are ignored. |
+| `grepFinder.openMode` | `"grid"` | Which mode the Open button starts in, `"grid"` or `"tabs"`. The in-panel toggle overrides it from then on. |
 | `grepFinder.ripgrepPath` | `""` | Absolute path to your own `rg` binary. Empty uses the one bundled with VS Code, falling back to `rg` on your `PATH`. Ignored in untrusted workspaces. |
 
 ---

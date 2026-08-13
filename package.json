@@ -82,10 +82,28 @@
           "default": 2,
           "description": "Default number of context lines (both before and after) shown around each match."
         },
+        "grepFinder.openMode": {
+          "type": "string",
+          "enum": [
+            "grid",
+            "tabs"
+          ],
+          "enumDescriptions": [
+            "Retile the editor area and give every selected match its own group, side by side.",
+            "Open the selected matches as ordinary tabs in the active editor group, leaving the layout alone."
+          ],
+          "default": "grid",
+          "description": "How the Open button opens the selected matches. This only sets the starting mode; the grid/tabs toggle in the panel remembers your last choice."
+        },
         "grepFinder.maxGridEditors": {
           "type": "number",
           "default": 9,
           "description": "Maximum number of editors opened at once when using 'Open in grid'."
+        },
+        "grepFinder.maxTabEditors": {
+          "type": "number",
+          "default": 20,
+          "description": "Maximum number of tabs opened at once when using 'Open in tabs'. Counted per file, since a file can only have one tab."
         },
         "grepFinder.maxResults": {
           "type": "number",
