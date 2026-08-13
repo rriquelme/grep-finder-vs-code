@@ -2,7 +2,7 @@
 
 All notable changes to **Grep Finder** are documented here.
 
-## [Unreleased]
+## [0.1.2]
 
 - Added a **grid / tabs** switch next to the Open button. Grid is unchanged and
   still the default; tabs opens the selection as ordinary tabs in the active
