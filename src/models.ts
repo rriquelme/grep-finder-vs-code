@@ -71,6 +71,18 @@ export interface SearchOptions {
   openFilesOnly?: boolean;
 }
 
+/** How a selection of matches is opened. */
+export type OpenMode = 'grid' | 'tabs';
+
+/** One match to open: a file plus the position to reveal it at. */
+export interface OpenTarget {
+  fileUri: string;
+  /** 1-based line to reveal/center. */
+  anchorLine: number;
+  /** 0-based column of the match start. */
+  anchorColumn: number;
+}
+
 export function blockId(fileUri: string, anchorLine: number): string {
   return `${fileUri}:${anchorLine}`;
 }

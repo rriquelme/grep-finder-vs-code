@@ -171,6 +171,11 @@ body {
   gap: var(--ef-gap);
 }
 
+/* Grid / tabs switch, sitting next to the Open button. */
+.open-mode {
+  align-items: center;
+}
+
 .btn {
   padding: 3px 10px;
   color: var(--vscode-button-secondaryForeground);

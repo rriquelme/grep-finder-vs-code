@@ -3,16 +3,10 @@
 // navigates each one independently.
 import * as vscode from 'vscode';
 import { buildLayout, clampCount } from './layout';
+import { showTarget } from './reveal';
+import type { OpenTarget } from '../models';
 
-export interface GridTarget {
-  fileUri: string;
-  /** 1-based line to reveal/center. */
-  anchorLine: number;
-  /** 0-based column of the match start. */
-  anchorColumn: number;
-}
-
-export async function openInGrid(targets: GridTarget[]): Promise<void> {
+export async function openInGrid(targets: OpenTarget[]): Promise<void> {
   if (targets.length === 0) {
     return;
   }
@@ -31,21 +25,11 @@ export async function openInGrid(targets: GridTarget[]): Promise<void> {
 
   for (let i = 0; i < count; i++) {
     const t = targets[i];
-    const line = Math.max(0, t.anchorLine - 1); // to 0-based
-    const col = Math.max(0, t.anchorColumn);
-    const pos = new vscode.Position(line, col);
-    const selection = new vscode.Selection(pos, pos);
-    const viewColumn = (i + 1) as vscode.ViewColumn;
-
     try {
-      const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(t.fileUri));
-      const editor = await vscode.window.showTextDocument(doc, {
-        viewColumn,
-        selection,
-        preview: false,
+      await showTarget(t, {
+        viewColumn: (i + 1) as vscode.ViewColumn,
         preserveFocus: i !== 0,
       });
-      editor.revealRange(selection, vscode.TextEditorRevealType.InCenter);
     } catch (err) {
       void vscode.window.showErrorMessage(
         `Grep Finder: could not open ${t.fileUri}: ${String(err)}`,

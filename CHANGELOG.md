@@ -4,6 +4,12 @@ All notable changes to **Grep Finder** are documented here.
 
 ## [Unreleased]
 
+- Added a **grid / tabs** switch next to the Open button. Grid is unchanged and
+  still the default; tabs opens the selection as ordinary tabs in the active
+  editor group, centred on each match, without retiling the editor area. One tab
+  per file (the top-most selected match wins), capped by the new
+  `grepFinder.maxTabEditors` (default 20). `grepFinder.openMode` picks the mode
+  you start in, and the panel remembers the last one you used.
 - Build only: GitHub Actions updated to Node 24 runtimes (`upload-artifact` v7,
   `action-gh-release` v3), clearing the Node 20 deprecation warning. The release
   workflow can also now be dispatched with an exact version number. No change to

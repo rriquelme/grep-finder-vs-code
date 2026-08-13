@@ -3,7 +3,7 @@
 // The search form is built ONCE and never re-rendered, so typing never loses
 // focus. Only the actions bar and results list are refreshed when results
 // arrive.
-import type { FileResult, MatchBlock, SearchModel, SearchOptions } from '../src/models';
+import type { FileResult, MatchBlock, OpenMode, SearchModel, SearchOptions } from '../src/models';
 
 interface VsCodeApi {
   postMessage(msg: unknown): void;
@@ -15,6 +15,8 @@ const vscode = acquireVsCodeApi();
 
 interface PersistState {
   options: SearchOptions;
+  /** How the Open button opens the selection. Seeded from `grepFinder.openMode`. */
+  openMode?: OpenMode;
 }
 
 const DEFAULT_OPTIONS: SearchOptions = {
@@ -32,6 +34,7 @@ const DEFAULT_OPTIONS: SearchOptions = {
 };
 
 let options: SearchOptions = { ...DEFAULT_OPTIONS };
+let openMode: OpenMode = 'grid';
 let model: SearchModel = { files: [], truncated: false, totalMatches: 0 };
 const selected = new Set<string>();
 // File URIs whose results are collapsed (showing only the file title).
@@ -66,10 +69,13 @@ function restore(): void {
   if (state?.options) {
     options = { ...DEFAULT_OPTIONS, ...state.options };
   }
+  if (state?.openMode) {
+    openMode = state.openMode;
+  }
 }
 
 function persist(): void {
-  vscode.setState<PersistState>({ options });
+  vscode.setState<PersistState>({ options, openMode });
 }
 
 function splitGlobs(value: string): string[] {
@@ -274,11 +280,29 @@ function buildActions(): HTMLElement {
     right.appendChild(collapseBtn);
   }
 
+  // Grid vs tabs: pick where the selection opens. The Open button follows it.
+  const modes = el('div', 'toggles open-mode');
+  modes.setAttribute('role', 'group');
+  modes.setAttribute('aria-label', 'Where to open selected matches');
+  modes.appendChild(
+    modeToggle('grid', 'split-horizontal', 'Open in a grid (retiles the editor area)'),
+  );
+  modes.appendChild(
+    modeToggle('tabs', 'files', 'Open as tabs in the active editor group'),
+  );
+  right.appendChild(modes);
+
+  const tabsMode = openMode === 'tabs';
+  const where = tabsMode ? 'tabs' : 'grid';
   const openBtn = el('button', 'btn primary') as HTMLButtonElement;
-  openBtn.innerHTML = `<i class="codicon codicon-split-horizontal"></i> ${count ? `Open ${count} in grid` : 'Open in grid'}`;
+  openBtn.innerHTML =
+    `<i class="codicon codicon-${tabsMode ? 'files' : 'split-horizontal'}"></i> ` +
+    `${count ? `Open ${count} in ${where}` : `Open in ${where}`}`;
   openBtn.disabled = count === 0;
-  openBtn.title = 'Open selected matches side-by-side, each at its match';
-  openBtn.onclick = openGrid;
+  openBtn.title = tabsMode
+    ? 'Open selected matches as tabs in the active group, each at its match (one tab per file)'
+    : 'Open selected matches side-by-side, each at its match';
+  openBtn.onclick = openSelection;
   right.appendChild(openBtn);
 
   if (count) {
@@ -430,14 +454,33 @@ function selectedBlocks(): MatchBlock[] {
   return result;
 }
 
-function openGrid(): void {
+function modeToggle(mode: OpenMode, icon: string, title: string): HTMLElement {
+  const active = openMode === mode;
+  const b = el('button', `mini-toggle${active ? ' active' : ''}`);
+  b.innerHTML = `<i class="codicon codicon-${icon}"></i>`;
+  b.title = title;
+  b.setAttribute('aria-pressed', String(active));
+  b.onclick = () => setOpenMode(mode);
+  return b;
+}
+
+function setOpenMode(mode: OpenMode): void {
+  if (openMode === mode) {
+    return;
+  }
+  openMode = mode;
+  persist();
+  refreshActions();
+}
+
+function openSelection(): void {
   const targets = selectedBlocks().map((b) => ({
     fileUri: b.fileUri,
     anchorLine: b.anchorLine,
     anchorColumn: b.anchorColumn,
   }));
   if (targets.length) {
-    vscode.postMessage({ type: 'openGrid', targets });
+    vscode.postMessage({ type: 'openSelection', mode: openMode, targets });
   }
 }
 
@@ -613,13 +656,21 @@ window.addEventListener('message', (event: MessageEvent) => {
       refreshResults();
       showError(msg.message as string);
       break;
-    case 'config':
-      if (!vscode.getState<PersistState>()) {
+    case 'config': {
+      const saved = vscode.getState<PersistState>();
+      if (!saved) {
         options.contextBoth = msg.defaultContextLines as number;
         bothInput.value = String(options.contextBoth);
         syncContextDisabled();
       }
+      // The setting only seeds the mode; once the user has flipped the toggle,
+      // the remembered choice wins.
+      if (!saved?.openMode) {
+        openMode = msg.openMode === 'tabs' ? 'tabs' : 'grid';
+        refreshActions();
+      }
       break;
+    }
   }
 });
 
