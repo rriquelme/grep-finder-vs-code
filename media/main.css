@@ -152,6 +152,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--ef-gap);
   margin: 10px 0 6px;
   min-height: 24px;
@@ -168,12 +169,30 @@ body {
 
 .actions-right {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--ef-gap);
 }
 
-/* Grid / tabs switch, sitting next to the Open button. */
-.open-mode {
+/* The two open buttons, side by side: pick one, no mode to flip first. */
+.open-actions {
+  display: flex;
   align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.open-btn {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* In a narrow panel the labels go first; the icons still say which is which. */
+@media (max-width: 320px) {
+  .open-btn .btn-label {
+    display: none;
+  }
 }
 
 .btn {

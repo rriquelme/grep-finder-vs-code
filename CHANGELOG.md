@@ -2,6 +2,15 @@
 
 All notable changes to **Grep Finder** are documented here.
 
+## [Unreleased]
+
+- The results bar now shows **Open in grid** and **Open in tabs** as two buttons
+  side by side, instead of a mode switch you had to press before the single Open
+  button did what you wanted. Opening behaves exactly as before — you just pick
+  the action directly. The button you used last stays highlighted as the default
+  (still seeded by `grepFinder.openMode`), and the number of selected matches
+  moved into the status text on the left of the bar.
+
 ## [0.1.2]
 
 - Added a **grid / tabs** switch next to the Open button. Grid is unchanged and

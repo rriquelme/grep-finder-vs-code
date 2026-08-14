@@ -100,7 +100,7 @@ This is the feature the extension exists for.
 
 1. Select the matches you care about — click them, or press <kbd>Space</kbd> on
    each while moving with the arrow keys.
-2. Click **Open N in grid** in the results bar.
+2. Click **Open in grid** in the results bar.
 
 VS Code splits the editor area and opens every selected match in its own pane,
 centered on its match line. Each pane is a real editor, so you can scroll, edit,
@@ -111,28 +111,30 @@ Layouts follow the count: 2 → side by side, 3 → 3-up, 4 → 2×2, 5–6 → 
 7–9 → 3×3. The cap is configurable (`grepFinder.maxGridEditors`, default 9).
 
 **Try it:** search `calculateInvoiceTotal`, set **Both (-C)** to `2`, select a
-match in four different files, and press **Open 4 in grid** — four panes, each
+match in four different files, and press **Open in grid** — four panes, each
 parked on its own copy of that function.
 
 ### …or open them as tabs
 
 A grid is great for comparing a handful of matches side by side, and wrong when
 you just want to walk through twenty hits without losing the split layout you
-already had. The two small buttons left of the Open button switch between them:
+already had. So the results bar carries **both** actions, side by side — there is
+no mode to flip first, you just press the one you want:
 
-| | Mode | What happens |
-|---|---|---|
-| ⊟ | **grid** | Retiles the editor area, one pane per selected match (the default). |
-| 🗐 | **tabs** | Opens the selection as ordinary tabs in the **active** editor group. Your layout is left exactly as it was. |
+| Button | What happens |
+|---|---|
+| ⊟ **Open in grid** | Retiles the editor area, one pane per selected match. |
+| 🗐 **Open in tabs** | Opens the selection as ordinary tabs in the **active** editor group. Your layout is left exactly as it was. |
 
-In tabs mode each tab is still centered on its match, and you land on the first
+With tabs, each tab is still centered on its match, and you land on the first
 one. A file can only have one tab, so selecting several matches in the same file
-opens it once, at the top-most of them — pick grid mode when you want to see two
-regions of one file at the same time.
+opens it once, at the top-most of them — use **Open in grid** when you want to
+see two regions of one file at the same time.
 
-The button label tells you which mode you are in (**Open 4 in tabs**), the choice
-is remembered, and `grepFinder.openMode` sets which one you start in. Tabs have
-their own cap, `grepFinder.maxTabEditors` (default 20).
+The button you used last is highlighted as the default, and `grepFinder.openMode`
+sets which one starts highlighted; both stay one click away either way. Tabs have
+their own cap, `grepFinder.maxTabEditors` (default 20). The number of matches you
+have selected is shown in the results bar, left of the buttons.
 
 ---
 
@@ -167,7 +169,7 @@ Search for `grepFinder` in Settings, or edit `settings.json`:
 | `grepFinder.maxGridEditors` | `9` | Most editors opened at once by **Open in grid**. Extra selections are ignored. |
 | `grepFinder.maxResults` | `2000` | Matches collected per search before results are truncated. |
 | `grepFinder.maxTabEditors` | `20` | Most tabs opened at once by **Open in tabs**, counted per file. Extra selections are ignored. |
-| `grepFinder.openMode` | `"grid"` | Which mode the Open button starts in, `"grid"` or `"tabs"`. The in-panel toggle overrides it from then on. |
+| `grepFinder.openMode` | `"grid"` | Which of the two open buttons starts highlighted as the default, `"grid"` or `"tabs"`. The button you use last takes over from then on; both are always clickable. |
 | `grepFinder.ripgrepPath` | `""` | Absolute path to your own `rg` binary. Empty uses the one bundled with VS Code, falling back to `rg` on your `PATH`. Ignored in untrusted workspaces. |
 
 ---

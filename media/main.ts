@@ -15,7 +15,12 @@ const vscode = acquireVsCodeApi();
 
 interface PersistState {
   options: SearchOptions;
-  /** How the Open button opens the selection. Seeded from `grepFinder.openMode`. */
+  /**
+   * Preferred way to open a selection: the open button highlighted as the
+   * default. Both buttons are always clickable — this only decides which one
+   * is emphasised. Seeded from `grepFinder.openMode`, then follows the last
+   * button used.
+   */
   openMode?: OpenMode;
 }
 
@@ -280,30 +285,14 @@ function buildActions(): HTMLElement {
     right.appendChild(collapseBtn);
   }
 
-  // Grid vs tabs: pick where the selection opens. The Open button follows it.
-  const modes = el('div', 'toggles open-mode');
-  modes.setAttribute('role', 'group');
-  modes.setAttribute('aria-label', 'Where to open selected matches');
-  modes.appendChild(
-    modeToggle('grid', 'split-horizontal', 'Open in a grid (retiles the editor area)'),
-  );
-  modes.appendChild(
-    modeToggle('tabs', 'files', 'Open as tabs in the active editor group'),
-  );
-  right.appendChild(modes);
-
-  const tabsMode = openMode === 'tabs';
-  const where = tabsMode ? 'tabs' : 'grid';
-  const openBtn = el('button', 'btn primary') as HTMLButtonElement;
-  openBtn.innerHTML =
-    `<i class="codicon codicon-${tabsMode ? 'files' : 'split-horizontal'}"></i> ` +
-    `${count ? `Open ${count} in ${where}` : `Open in ${where}`}`;
-  openBtn.disabled = count === 0;
-  openBtn.title = tabsMode
-    ? 'Open selected matches as tabs in the active group, each at its match (one tab per file)'
-    : 'Open selected matches side-by-side, each at its match';
-  openBtn.onclick = openSelection;
-  right.appendChild(openBtn);
+  // Both ways of opening sit side by side: you press the one you want instead
+  // of flipping a mode first. The preferred one is styled as primary.
+  const open = el('div', 'open-actions');
+  open.setAttribute('role', 'group');
+  open.setAttribute('aria-label', 'Open selected matches');
+  open.appendChild(openButton('grid', count));
+  open.appendChild(openButton('tabs', count));
+  right.appendChild(open);
 
   if (count) {
     const clearBtn = el('button', 'btn') as HTMLButtonElement;
@@ -325,14 +314,20 @@ function statusContent(): HTMLElement {
     span.innerHTML = `<i class="codicon codicon-loading codicon-modifier-spin"></i> Searching…`;
     return span;
   }
+  // The selected count used to live in the Open button label; with two open
+  // buttons it belongs here, where it stays readable in a narrow panel.
+  const parts: string[] = [];
   if (model.totalMatches) {
     const files = model.files.length;
-    span.textContent =
+    parts.push(
       `${model.totalMatches} match${model.totalMatches === 1 ? '' : 'es'} in ` +
-      `${files} file${files === 1 ? '' : 's'}${model.truncated ? ' (truncated)' : ''}`;
-  } else {
-    span.textContent = '';
+        `${files} file${files === 1 ? '' : 's'}${model.truncated ? ' (truncated)' : ''}`,
+    );
   }
+  if (selected.size) {
+    parts.push(`${selected.size} selected`);
+  }
+  span.textContent = parts.join(' · ');
   return span;
 }
 
@@ -454,17 +449,33 @@ function selectedBlocks(): MatchBlock[] {
   return result;
 }
 
-function modeToggle(mode: OpenMode, icon: string, title: string): HTMLElement {
-  const active = openMode === mode;
-  const b = el('button', `mini-toggle${active ? ' active' : ''}`);
-  b.innerHTML = `<i class="codicon codicon-${icon}"></i>`;
-  b.title = title;
-  b.setAttribute('aria-pressed', String(active));
-  b.onclick = () => setOpenMode(mode);
+const OPEN_ACTIONS: Record<OpenMode, { label: string; icon: string; title: string }> = {
+  grid: {
+    label: 'Open in grid',
+    icon: 'split-horizontal',
+    title: 'Open selected matches side-by-side in a grid, each at its match (retiles the editor area)',
+  },
+  tabs: {
+    label: 'Open in tabs',
+    icon: 'files',
+    title: 'Open selected matches as tabs in the active group, each at its match (one tab per file)',
+  },
+};
+
+/** One of the two open buttons. `count` only drives the enabled state. */
+function openButton(mode: OpenMode, count: number): HTMLButtonElement {
+  const spec = OPEN_ACTIONS[mode];
+  const b = el('button', `btn open-btn${openMode === mode ? ' primary' : ''}`) as HTMLButtonElement;
+  b.innerHTML = `<i class="codicon codicon-${spec.icon}"></i> <span class="btn-label">${spec.label}</span>`;
+  b.disabled = count === 0;
+  b.title = count ? `${spec.title} — ${count} selected` : spec.title;
+  b.setAttribute('aria-label', count ? `${spec.label} (${count} selected)` : spec.label);
+  b.onclick = () => openSelection(mode);
   return b;
 }
 
-function setOpenMode(mode: OpenMode): void {
+/** Remember the last button used so it stays highlighted as the default. */
+function rememberOpenMode(mode: OpenMode): void {
   if (openMode === mode) {
     return;
   }
@@ -473,14 +484,15 @@ function setOpenMode(mode: OpenMode): void {
   refreshActions();
 }
 
-function openSelection(): void {
+function openSelection(mode: OpenMode): void {
   const targets = selectedBlocks().map((b) => ({
     fileUri: b.fileUri,
     anchorLine: b.anchorLine,
     anchorColumn: b.anchorColumn,
   }));
   if (targets.length) {
-    vscode.postMessage({ type: 'openSelection', mode: openMode, targets });
+    rememberOpenMode(mode);
+    vscode.postMessage({ type: 'openSelection', mode, targets });
   }
 }
 
@@ -663,8 +675,8 @@ window.addEventListener('message', (event: MessageEvent) => {
         bothInput.value = String(options.contextBoth);
         syncContextDisabled();
       }
-      // The setting only seeds the mode; once the user has flipped the toggle,
-      // the remembered choice wins.
+      // The setting only seeds which button is highlighted as the default;
+      // once the user has opened something, the last button used wins.
       if (!saved?.openMode) {
         openMode = msg.openMode === 'tabs' ? 'tabs' : 'grid';
         refreshActions();

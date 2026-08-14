@@ -93,7 +93,7 @@
             "Open the selected matches as ordinary tabs in the active editor group, leaving the layout alone."
           ],
           "default": "grid",
-          "description": "How the Open button opens the selected matches. This only sets the starting mode; the grid/tabs toggle in the panel remembers your last choice."
+          "description": "Which of the two open buttons in the results bar is highlighted as the default. Both are always available — you press the one you want — and the panel then highlights whichever you used last."
         },
         "grepFinder.maxGridEditors": {
           "type": "number",
