@@ -2,7 +2,7 @@
 
 All notable changes to **Grep Finder** are documented here.
 
-## [Unreleased]
+## [0.1.3]
 
 - The results bar now shows **Open in grid** and **Open in tabs** as two buttons
   side by side, instead of a mode switch you had to press before the single Open
